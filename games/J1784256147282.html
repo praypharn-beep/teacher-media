@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>มังกรมาตรา</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --paper: #fffaf0;
+      --mint: #d9f7ec;
+      --sky: #cfefff;
+      --gold: #ffd166;
+      --rose: #ff8fab;
+      --ok: #19a974;
+      --warn: #f97316;
+      --shadow: 0 10px 28px rgba(30, 41, 59, .18);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      color: var(--ink);
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+      background: linear-gradient(180deg, #e7fbff 0%, #fff9dc 56%, #ffe8ef 100%);
+      touch-action: none;
+    }
+
+    button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 700;
+      color: #17324d;
+      background: var(--gold);
+      box-shadow: 0 4px 0 #d9a928;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button:active { transform: translateY(2px); box-shadow: 0 2px 0 #d9a928; }
+    button.secondary { background: #ffffff; box-shadow: 0 4px 0 #cbd5e1; }
+
+    #app {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      isolation: isolate;
+    }
+
+    #cameraLayer {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 18%, rgba(255,255,255,.55), transparent 36%);
+      z-index: -2;
+    }
+
+    #inputVideo, #guideCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      opacity: .42;
+    }
+
+    #guideCanvas { opacity: .62; }
+
+    #softTint {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(231,251,255,.7), rgba(255,250,240,.56));
+      z-index: -1;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: start;
+      padding: max(10px, env(safe-area-inset-top)) 12px 8px;
+      pointer-events: none;
+    }
+
+    .titleBlock {
+      min-width: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.78);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 7vw, 36px);
+      line-height: 1.05;
+      color: #13395b;
+      letter-spacing: 0;
+    }
+
+    #prompt {
+      margin-top: 4px;
+      font-size: clamp(14px, 4vw, 18px);
+      line-height: 1.25;
+      font-weight: 700;
+    }
+
+    .stats {
+      display: grid;
+      gap: 6px;
+      min-width: 96px;
+      pointer-events: auto;
+    }
+
+    .pill {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.82);
+      box-shadow: var(--shadow);
+      text-align: center;
+      font-weight: 800;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    #stage {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .word {
+      position: absolute;
+      min-width: 72px;
+      max-width: 34vw;
+      min-height: 44px;
+      display: grid;
+      place-items: center;
+      padding: 8px 14px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 3px solid #17324d;
+      box-shadow: 0 8px 0 rgba(23,50,77,.18);
+      font-size: clamp(20px, 6vw, 30px);
+      font-weight: 900;
+      text-align: center;
+      user-select: none;
+      touch-action: none;
+      will-change: transform;
+      transition: box-shadow .16s ease, border-color .16s ease, filter .16s ease;
+    }
+
+    .word.grabbed {
+      z-index: 8;
+      border-color: var(--rose);
+      box-shadow: 0 14px 0 rgba(255,143,171,.24);
+      filter: saturate(1.15);
+    }
+
+    .word.correct {
+      animation: popAway .45s ease forwards;
+    }
+
+    .word.wrong {
+      animation: bounceBack .42s ease;
+    }
+
+    @keyframes popAway {
+      to { transform: translate(var(--x), var(--y)) scale(.25) rotate(14deg); opacity: 0; }
+    }
+
+    @keyframes bounceBack {
+      0%, 100% { margin-left: 0; }
+      25% { margin-left: -16px; }
+      50% { margin-left: 14px; }
+      75% { margin-left: -8px; }
+    }
+
+    footer {
+      position: relative;
+      min-height: 142px;
+      padding: 0 12px max(12px, env(safe-area-inset-bottom));
+      pointer-events: none;
+    }
+
+    #dragonZone {
+      position: absolute;
+      right: 10px;
+      bottom: max(10px, env(safe-area-inset-bottom));
+      width: min(44vw, 190px);
+      aspect-ratio: 1.15;
+      pointer-events: auto;
+    }
+
+    #dragon {
+      position: absolute;
+      inset: 0;
+      filter: drop-shadow(0 10px 12px rgba(30, 41, 59, .2));
+    }
+
+    #dragon.shake { animation: dragonShake .48s ease; }
+    #dragon.happy { animation: dragonHappy .62s ease; }
+
+    @keyframes dragonShake {
+      20% { transform: translateX(-8px) rotate(-3deg); }
+      45% { transform: translateX(7px) rotate(3deg); }
+      70% { transform: translateX(-4px) rotate(-2deg); }
+    }
+
+    @keyframes dragonHappy {
+      35% { transform: translateY(-12px) scale(1.05); }
+      70% { transform: translateY(2px) scale(.98); }
+    }
+
+    #mouthTarget {
+      position: absolute;
+      left: 43%;
+      top: 38%;
+      width: 32%;
+      height: 24%;
+      border-radius: 50%;
+    }
+
+    #stars {
+      position: absolute;
+      inset: -12px;
+      pointer-events: none;
+    }
+
+    .star {
+      position: absolute;
+      color: #ffd700;
+      font-size: 24px;
+      animation: starFly .72s ease-out forwards;
+    }
+
+    @keyframes starFly {
+      from { transform: translate(0, 0) scale(.5); opacity: 1; }
+      to { transform: translate(var(--sx), var(--sy)) scale(1.2); opacity: 0; }
+    }
+
+    #handCursor {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      margin: -14px 0 0 -14px;
+      border-radius: 50%;
+      border: 3px solid #0ea5e9;
+      background: rgba(255,255,255,.65);
+      box-shadow: 0 0 0 8px rgba(14,165,233,.12);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 12;
+    }
+
+    #handCursor.pinching {
+      border-color: #f43f5e;
+      box-shadow: 0 0 0 10px rgba(244,63,94,.16);
+    }
+
+    #message {
+      position: absolute;
+      left: 12px;
+      right: min(48vw, 208px);
+      bottom: max(18px, env(safe-area-inset-bottom));
+      padding: 10px 12px;
+      min-height: 52px;
+      display: grid;
+      align-items: center;
+      border-radius: 8px;
+      background: rgba(255,255,255,.84);
+      box-shadow: var(--shadow);
+      font-size: clamp(15px, 4vw, 18px);
+      font-weight: 800;
+      line-height: 1.25;
+      pointer-events: auto;
+    }
+
+    #controls {
+      position: absolute;
+      left: 12px;
+      top: 100%;
+      transform: translateY(-54px);
+      display: flex;
+      gap: 8px;
+      z-index: 20;
+      pointer-events: auto;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background:
+        linear-gradient(180deg, rgba(207,239,255,.94), rgba(255,250,240,.96));
+    }
+
+    .panel {
+      width: min(560px, 100%);
+      padding: 20px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.9);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 9vw, 44px);
+      color: #13395b;
+      letter-spacing: 0;
+    }
+
+    .panel p {
+      margin: 8px 0;
+      font-size: clamp(16px, 4.5vw, 20px);
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .panel .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (orientation: landscape) and (max-height: 520px) {
+      header { padding: 8px; }
+      footer { min-height: 112px; }
+      #dragonZone { width: min(24vw, 150px); }
+      #message { right: min(30vw, 172px); }
+      h1 { font-size: 24px; }
+      #prompt { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="cameraLayer" aria-hidden="true">
+      <video id="inputVideo" playsinline muted></video>
+      <canvas id="guideCanvas"></canvas>
+      <div id="softTint"></div>
+    </div>
+
+    <header>
+      <div class="titleBlock">
+        <h1>มังกรมาตรา</h1>
+        <div id="prompt">เตรียมช่วยมังกรน้อยหาคำให้ถูกมาตรา</div>
+      </div>
+      <div class="stats">
+        <div class="pill" id="stageLabel">ด่าน 1/8</div>
+        <div class="pill" id="scoreLabel">คะแนน 0</div>
+        <div class="pill" id="modeLabel">กล้อง</div>
+      </div>
+    </header>
+
+    <main id="stage" aria-label="พื้นที่เล่นเกม">
+      <div id="handCursor"></div>
+    </main>
+
+    <footer>
+      <div id="message">จีบนิ้วเพื่อหยิบคำ แล้วลากไปป้อนมังกร</div>
+      <div id="controls">
+        <button id="speakBtn" class="secondary" type="button">ฟังโจทย์</button>
+        <button id="restartBtn" class="secondary" type="button">เริ่มใหม่</button>
+      </div>
+      <div id="dragonZone" aria-label="ปากมังกรเป้าหมาย">
+        <svg id="dragon" viewBox="0 0 220 190" role="img" aria-label="มังกรเป้าหมาย">
+          <path id="dragonTail" d="M30 122 C4 116 7 74 43 83 C70 90 62 118 40 112" fill="#9ad7ff"/>
+          <path id="dragonBody" d="M47 115 C40 67 75 28 119 36 C164 44 196 82 184 127 C172 171 105 178 70 151 C57 141 50 131 47 115Z" fill="#ef4444"/>
+          <path d="M72 44 L84 10 L101 42 M128 39 L150 7 L154 49" fill="#ffd166" stroke="#17324d" stroke-width="6" stroke-linejoin="round"/>
+          <path d="M61 64 C43 58 35 45 38 30 C57 37 67 47 72 62Z" fill="#ffd166" stroke="#17324d" stroke-width="5"/>
+          <path d="M162 61 C181 49 194 35 194 20 C174 24 160 38 153 56Z" fill="#ffd166" stroke="#17324d" stroke-width="5"/>
+          <path id="dragonHead" d="M64 73 C75 38 126 29 162 52 C196 73 198 119 168 140 C136 163 79 154 63 120 C55 102 57 85 64 73Z" fill="#ef4444" stroke="#17324d" stroke-width="6"/>
+          <circle cx="103" cy="82" r="9" fill="#fff"/>
+          <circle cx="151" cy="82" r="9" fill="#fff"/>
+          <circle cx="105" cy="84" r="4" fill="#17324d"/>
+          <circle cx="149" cy="84" r="4" fill="#17324d"/>
+          <path d="M110 115 C123 128 143 128 158 115" fill="none" stroke="#17324d" stroke-width="7" stroke-linecap="round"/>
+          <path d="M73 104 C59 100 49 91 40 79" fill="none" stroke="#17324d" stroke-width="6" stroke-linecap="round"/>
+          <path d="M174 106 C190 101 200 93 207 81" fill="none" stroke="#17324d" stroke-width="6" stroke-linecap="round"/>
+        </svg>
+        <div id="mouthTarget"></div>
+        <div id="stars"></div>
+      </div>
+    </footer>
+  </div>
+
+  <div id="permissionOverlay" class="overlay">
+    <section class="panel" aria-labelledby="permissionTitle">
+      <h2 id="permissionTitle">มังกรมาตรา</h2>
+      <p id="permissionText">ขออนุญาตใช้กล้องเพื่อจับท่าจีบนิ้วและลากคำในเกม AR</p>
+      <p>ภาพกล้องใช้เฉพาะในเครื่องนี้ ไม่บันทึกภาพ และไม่มีการส่งข้อมูลไปที่อื่น</p>
+      <div class="actions">
+        <button id="cameraBtn" type="button">เปิดกล้องเพื่อเล่น AR</button>
+        <button id="touchBtn" class="secondary" type="button">เล่นแบบแตะลาก</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="finishOverlay" class="overlay hidden">
+    <section class="panel" aria-labelledby="finishTitle">
+      <h2 id="finishTitle">เก่งมาก!</h2>
+      <p id="finishText">หนูช่วยมังกรครบทุกมาตราแล้ว</p>
+      <p id="finalScore">คะแนนรวม 0</p>
+      <div class="actions">
+        <button id="playAgainBtn" type="button">เล่นอีกครั้ง</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <script>
+    const mattraStages = [
+      { name: 'แม่กก', colorName: 'สีแดง', color: '#ef4444', words: ['นก', 'จิก', 'ปาก', 'เมฆ'], decoys: ['มด', 'กบ', 'ลิง', 'ลม'] },
+      { name: 'แม่กด', colorName: 'สีส้ม', color: '#f97316', words: ['มด', 'ปิด', 'รส', 'เพชร'], decoys: ['นก', 'กบ', 'กิน', 'แมว'] },
+      { name: 'แม่กบ', colorName: 'สีเหลือง', color: '#facc15', words: ['กบ', 'ทัพ', 'ลาภ', 'รูป'], decoys: ['จิก', 'ปิด', 'วาน', 'สาย'] },
+      { name: 'แม่กน', colorName: 'สีเขียว', color: '#22c55e', words: ['กิน', 'วาน', 'ควาญ', 'ปาน'], decoys: ['เมฆ', 'รส', 'ลิง', 'ข้าว'] },
+      { name: 'แม่กง', colorName: 'สีฟ้า', color: '#38bdf8', words: ['กาง', 'ลิง', 'วิ่ง', 'สิงห์'], decoys: ['ปาก', 'ทัพ', 'ตำ', 'เนย'] },
+      { name: 'แม่กม', colorName: 'สีน้ำเงิน', color: '#2563eb', words: ['ลม', 'ยิ้ม', 'ตำ', 'ห้าม'], decoys: ['เพชร', 'กิน', 'กาง', 'แมว'] },
+      { name: 'แม่เกย', colorName: 'สีม่วง', color: '#8b5cf6', words: ['สาย', 'เนย', 'ยาย', 'ควาย'], decoys: ['นก', 'ลาภ', 'ลม', 'หิว'] },
+      { name: 'แม่เกอว', colorName: 'สีชมพู', color: '#ec4899', words: ['แมว', 'ข้าว', 'หนาว', 'หิว'], decoys: ['มด', 'วาน', 'วิ่ง', 'ยาย'] }
+    ];
+
+    const SMOOTHING_FRAMES = 5;
+    const PINCH_LIMIT = 0.35;
+    const PICK_RADIUS = 86;
+
+    const stageEl = document.getElementById('stage');
+    const promptEl = document.getElementById('prompt');
+    const stageLabel = document.getElementById('stageLabel');
+    const scoreLabel = document.getElementById('scoreLabel');
+    const modeLabel = document.getElementById('modeLabel');
+    const messageEl = document.getElementById('message');
+    const handCursor = document.getElementById('handCursor');
+    const dragon = document.getElementById('dragon');
+    const dragonBody = document.getElementById('dragonBody');
+    const dragonHead = document.getElementById('dragonHead');
+    const dragonTail = document.getElementById('dragonTail');
+    const mouthTarget = document.getElementById('mouthTarget');
+    const starsEl = document.getElementById('stars');
+    const inputVideo = document.getElementById('inputVideo');
+    const guideCanvas = document.getElementById('guideCanvas');
+    const permissionOverlay = document.getElementById('permissionOverlay');
+    const finishOverlay = document.getElementById('finishOverlay');
+    const finalScore = document.getElementById('finalScore');
+    const cameraBtn = document.getElementById('cameraBtn');
+    const touchBtn = document.getElementById('touchBtn');
+    const speakBtn = document.getElementById('speakBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+
+    let currentStage = 0;
+    let score = 0;
+    let words = [];
+    let grabbed = null;
+    let wasPinching = false;
+    let lastTime = 0;
+    let smoothPoints = [];
+    let camera = null;
+    let hands = null;
+    let touchFallback = false;
+    let running = false;
+    let lastPointer = null;
+
+    function shuffle(list) {
+      const copy = list.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function stageRect() {
+      return stageEl.getBoundingClientRect();
+    }
+
+    function setDragonColor(color) {
+      dragonBody.setAttribute('fill', color);
+      dragonHead.setAttribute('fill', color);
+      dragonTail.setAttribute('fill', tint(color, 54));
+    }
+
+    function tint(hex, percent) {
+      const n = parseInt(hex.slice(1), 16);
+      const r = n >> 16;
+      const g = (n >> 8) & 255;
+      const b = n & 255;
+      const mix = value => Math.round(value + (255 - value) * percent / 100);
+      return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+    }
+
+    function startGame() {
+      currentStage = 0;
+      score = 0;
+      running = true;
+      finishOverlay.classList.add('hidden');
+      loadStage();
+      requestAnimationFrame(loop);
+    }
+
+    function loadStage() {
+      const data = mattraStages[currentStage];
+      setDragonColor(data.color);
+      grabbed = null;
+      wasPinching = false;
+      smoothPoints = [];
+      stageEl.querySelectorAll('.word').forEach(el => el.remove());
+
+      const chosen = shuffle(data.words).slice(0, 4).map(text => ({ text, mattra: data.name, correct: true }));
+      const decoys = shuffle(data.decoys).slice(0, 4).map(text => ({ text, mattra: 'อื่น', correct: false }));
+      const items = shuffle(chosen.concat(decoys));
+      const rect = stageRect();
+      const cols = Math.min(items.length, 4);
+
+      words = items.map((item, index) => {
+        const el = document.createElement('div');
+        el.className = 'word';
+        el.textContent = item.text;
+        el.setAttribute('role', 'button');
+        el.setAttribute('aria-label', `คำว่า ${item.text}`);
+        stageEl.appendChild(el);
+
+        const col = index % cols;
+        const row = Math.floor(index / cols);
+        const x = 16 + col * ((rect.width - 120) / Math.max(cols - 1, 1)) + Math.random() * 18;
+        const y = -80 - row * 78 - Math.random() * 60;
+        const word = {
+          ...item,
+          el,
+          x,
+          y,
+          homeX: x,
+          homeY: Math.max(18, 72 + row * 62),
+          speed: 12 + Math.random() * 8,
+          caught: false
+        };
+        placeWord(word);
+        attachTouchDrag(word);
+        return word;
+      });
+
+      updateLabels();
+      speakPrompt();
+      messageEl.textContent = 'จีบนิ้วเพื่อหยิบคำที่ใช่ แล้วลากไปป้อนมังกร';
+    }
+
+    function updateLabels() {
+      const data = mattraStages[currentStage];
+      stageLabel.textContent = `ด่าน ${currentStage + 1}/8`;
+      scoreLabel.textContent = `คะแนน ${score}`;
+      promptEl.textContent = `หามาตรา${data.name}! หยิบคำที่ใช่ ป้อนให้มังกร${data.colorName}`;
+      modeLabel.textContent = touchFallback ? 'แตะลาก' : 'กล้อง';
+    }
+
+    function placeWord(word) {
+      word.el.style.setProperty('--x', `${word.x}px`);
+      word.el.style.setProperty('--y', `${word.y}px`);
+      word.el.style.transform = `translate(${word.x}px, ${word.y}px)`;
+    }
+
+    function loop(time) {
+      if (!running) return;
+      const dt = Math.min(0.05, (time - lastTime) / 1000 || 0.016);
+      lastTime = time;
+      const rect = stageRect();
+
+      for (const word of words) {
+        if (word.caught || word === grabbed) continue;
+        word.y += word.speed * dt;
+        const limit = rect.height - 90;
+        if (word.y > limit) {
+          word.y = -70 - Math.random() * 90;
+          word.x = 14 + Math.random() * Math.max(80, rect.width - 130);
+          word.homeX = word.x;
+          word.homeY = Math.max(18, word.y);
+        }
+        placeWord(word);
+      }
+      requestAnimationFrame(loop);
+    }
+
+    async function startCameraMode() {
+      touchFallback = false;
+      updateLabels();
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('no-camera-api');
+        }
+        permissionOverlay.classList.add('hidden');
+        await setupHands();
+        startGame();
+      } catch (error) {
+        enableTouchFallback('ไม่สามารถเปิดกล้องได้ ตอนนี้เล่นด้วยโหมดแตะลากแทนได้เลย');
+      }
+    }
+
+    async function setupHands() {
+      hands = new Hands({
+        locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.65,
+        minTrackingConfidence: 0.55
+      });
+      hands.onResults(onHandsResults);
+      camera = new Camera(inputVideo, {
+        onFrame: async () => {
+          await hands.send({ image: inputVideo });
+        },
+        width: 640,
+        height: 480
+      });
+      await camera.start();
+    }
+
+    function onHandsResults(results) {
+      resizeGuideCanvas();
+      const ctx = guideCanvas.getContext('2d');
+      ctx.clearRect(0, 0, guideCanvas.width, guideCanvas.height);
+
+      if (!results.multiHandLandmarks || !results.multiHandLandmarks.length) {
+        handCursor.style.opacity = '0';
+        if (wasPinching) releaseGrab();
+        wasPinching = false;
+        return;
+      }
+
+      const landmarks = results.multiHandLandmarks[0];
+      if (window.drawConnectors && window.HAND_CONNECTIONS) {
+        ctx.save();
+        ctx.translate(guideCanvas.width, 0);
+        ctx.scale(-1, 1);
+        drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: '#38bdf8', lineWidth: 3 });
+        drawLandmarks(ctx, landmarks, { color: '#f43f5e', lineWidth: 1, radius: 2 });
+        ctx.restore();
+      }
+
+      const indexTip = landmarks[8];
+      const thumbTip = landmarks[4];
+      const wrist = landmarks[0];
+      const middleBase = landmarks[9];
+      const handScale = Math.max(0.05, distance(wrist, middleBase));
+      const pinchDistance = distance(indexTip, thumbTip) / handScale;
+      const pinching = pinchDistance < PINCH_LIMIT;
+      const rect = stageRect();
+      const rawPoint = {
+        x: (1 - indexTip.x) * rect.width,
+        y: indexTip.y * rect.height
+      };
+      const point = smoothPoint(rawPoint);
+      moveCursor(point, pinching);
+      handlePinch(point, pinching);
+    }
+
+    function resizeGuideCanvas() {
+      const width = guideCanvas.clientWidth;
+      const height = guideCanvas.clientHeight;
+      if (guideCanvas.width !== width || guideCanvas.height !== height) {
+        guideCanvas.width = width;
+        guideCanvas.height = height;
+      }
+    }
+
+    function distance(a, b) {
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      return Math.hypot(dx, dy);
+    }
+
+    function smoothPoint(point) {
+      smoothPoints.push(point);
+      if (smoothPoints.length > SMOOTHING_FRAMES) smoothPoints.shift();
+      const sum = smoothPoints.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+      return { x: sum.x / smoothPoints.length, y: sum.y / smoothPoints.length };
+    }
+
+    function moveCursor(point, pinching) {
+      handCursor.style.opacity = '1';
+      handCursor.style.transform = `translate(${point.x}px, ${point.y}px)`;
+      handCursor.classList.toggle('pinching', pinching);
+    }
+
+    function handlePinch(point, pinching) {
+      if (pinching && !wasPinching) {
+        grabbed = nearestWord(point);
+        if (grabbed) {
+          grabbed.el.classList.add('grabbed');
+          messageEl.textContent = `หยิบคำว่า ${grabbed.text}`;
+        }
+      }
+      if (pinching && grabbed) {
+        grabbed.x = point.x - grabbed.el.offsetWidth / 2;
+        grabbed.y = point.y - grabbed.el.offsetHeight / 2;
+        placeWord(grabbed);
+      }
+      if (!pinching && wasPinching) {
+        releaseGrab();
+      }
+      wasPinching = pinching;
+    }
+
+    function nearestWord(point) {
+      let best = null;
+      let bestDistance = Infinity;
+      for (const word of words) {
+        if (word.caught) continue;
+        const rect = word.el.getBoundingClientRect();
+        const stage = stageRect();
+        const center = {
+          x: rect.left - stage.left + rect.width / 2,
+          y: rect.top - stage.top + rect.height / 2
+        };
+        const d = Math.hypot(center.x - point.x, center.y - point.y);
+        if (d < bestDistance) {
+          bestDistance = d;
+          best = word;
+        }
+      }
+      return bestDistance <= PICK_RADIUS ? best : null;
+    }
+
+    function releaseGrab() {
+      if (!grabbed) return;
+      grabbed.el.classList.remove('grabbed');
+      if (isOverMouth(grabbed)) {
+        judgeWord(grabbed);
+      } else {
+        messageEl.textContent = 'ลองลากคำไปที่ปากมังกรนะ';
+      }
+      grabbed = null;
+    }
+
+    function isOverMouth(word) {
+      const wordRect = word.el.getBoundingClientRect();
+      const mouthRect = mouthTarget.getBoundingClientRect();
+      const cx = wordRect.left + wordRect.width / 2;
+      const cy = wordRect.top + wordRect.height / 2;
+      return cx >= mouthRect.left && cx <= mouthRect.right && cy >= mouthRect.top && cy <= mouthRect.bottom;
+    }
+
+    function judgeWord(word) {
+      const data = mattraStages[currentStage];
+      if (word.correct) {
+        score += 1;
+        word.caught = true;
+        word.el.classList.add('correct');
+        dragon.classList.remove('shake');
+        dragon.classList.add('happy');
+        updateLabels();
+        burstStars();
+        chime();
+        say(`${data.name}จ้า`);
+        messageEl.textContent = `ถูกต้อง! ${word.text} อยู่ในมาตรา${data.name}`;
+        setTimeout(() => word.el.remove(), 430);
+        setTimeout(() => dragon.classList.remove('happy'), 650);
+        setTimeout(checkStageComplete, 520);
+      } else {
+        dragon.classList.remove('happy');
+        dragon.classList.add('shake');
+        word.el.classList.add('wrong');
+        say('อุ๊ย ไม่ใช่ลูกฉัน');
+        messageEl.textContent = 'อุ๊ย ไม่ใช่ลูกฉัน! ลองคำอื่นได้เลย';
+        setTimeout(() => {
+          word.x = word.homeX;
+          word.y = word.homeY;
+          word.el.classList.remove('wrong');
+          placeWord(word);
+          dragon.classList.remove('shake');
+        }, 430);
+      }
+    }
+
+    function checkStageComplete() {
+      const remaining = words.some(word => word.correct && !word.caught);
+      if (remaining) return;
+      if (currentStage < mattraStages.length - 1) {
+        currentStage += 1;
+        messageEl.textContent = 'ผ่านด่านแล้ว ไปช่วยมังกรตัวต่อไปกัน';
+        setTimeout(loadStage, 900);
+      } else {
+        finishGame();
+      }
+    }
+
+    function finishGame() {
+      running = false;
+      finalScore.textContent = `คะแนนรวม ${score} จาก ${mattraStages.reduce((sum, stage) => sum + Math.min(stage.words.length, 4), 0)}`;
+      finishOverlay.classList.remove('hidden');
+      say('เก่งมาก หนูช่วยมังกรครบทุกมาตราแล้ว');
+    }
+
+    function burstStars() {
+      starsEl.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.textContent = '★';
+        star.style.left = `${42 + Math.random() * 26}%`;
+        star.style.top = `${34 + Math.random() * 20}%`;
+        star.style.setProperty('--sx', `${-80 + Math.random() * 160}px`);
+        star.style.setProperty('--sy', `${-110 - Math.random() * 70}px`);
+        starsEl.appendChild(star);
+      }
+      setTimeout(() => starsEl.innerHTML = '', 760);
+    }
+
+    function speakPrompt() {
+      const data = mattraStages[currentStage];
+      say(`หามาตรา${data.name} หยิบคำที่ใช่ ป้อนให้มังกร${data.colorName}`);
+    }
+
+    function say(text) {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'th-TH';
+      utter.rate = 0.9;
+      window.speechSynthesis.speak(utter);
+    }
+
+    function chime() {
+      try {
+        const audio = new (window.AudioContext || window.webkitAudioContext)();
+        const gain = audio.createGain();
+        gain.gain.setValueAtTime(0.001, audio.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.2, audio.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.32);
+        gain.connect(audio.destination);
+        [660, 880, 990].forEach((freq, index) => {
+          const osc = audio.createOscillator();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          osc.connect(gain);
+          osc.start(audio.currentTime + index * 0.06);
+          osc.stop(audio.currentTime + 0.25 + index * 0.05);
+        });
+      } catch (error) {
+        // Some browsers block audio until the next touch. Speech feedback still works.
+      }
+    }
+
+    function enableTouchFallback(note) {
+      touchFallback = true;
+      permissionOverlay.classList.add('hidden');
+      inputVideo.style.display = 'none';
+      guideCanvas.style.display = 'none';
+      updateLabels();
+      if (!running) startGame();
+      messageEl.textContent = note || 'เปิดโหมดแตะลาก ใช้นิ้วลากคำไปป้อนมังกรได้เลย';
+    }
+
+    function attachTouchDrag(word) {
+      word.el.addEventListener('pointerdown', event => {
+        if (!touchFallback) return;
+        event.preventDefault();
+        word.el.setPointerCapture(event.pointerId);
+        grabbed = word;
+        lastPointer = pointerInStage(event);
+        word.el.classList.add('grabbed');
+        messageEl.textContent = `หยิบคำว่า ${word.text}`;
+      });
+
+      word.el.addEventListener('pointermove', event => {
+        if (!touchFallback || grabbed !== word) return;
+        event.preventDefault();
+        const point = pointerInStage(event);
+        lastPointer = point;
+        word.x = point.x - word.el.offsetWidth / 2;
+        word.y = point.y - word.el.offsetHeight / 2;
+        placeWord(word);
+      });
+
+      word.el.addEventListener('pointerup', event => {
+        if (!touchFallback || grabbed !== word) return;
+        event.preventDefault();
+        releaseGrab();
+      });
+
+      word.el.addEventListener('pointercancel', () => {
+        if (!touchFallback || grabbed !== word) return;
+        releaseGrab();
+      });
+    }
+
+    function pointerInStage(event) {
+      const rect = stageRect();
+      return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    }
+
+    function resetAll() {
+      running = false;
+      words.forEach(word => word.el.remove());
+      words = [];
+      grabbed = null;
+      startGame();
+    }
+
+    cameraBtn.addEventListener('click', startCameraMode);
+    touchBtn.addEventListener('click', () => enableTouchFallback('เปิดโหมดแตะลาก ใช้นิ้วลากคำไปป้อนมังกรได้เลย'));
+    speakBtn.addEventListener('click', speakPrompt);
+    restartBtn.addEventListener('click', resetAll);
+    playAgainBtn.addEventListener('click', resetAll);
+
+    window.addEventListener('resize', () => {
+      resizeGuideCanvas();
+      words.forEach(word => {
+        word.x = Math.min(word.x, Math.max(12, stageRect().width - word.el.offsetWidth - 12));
+        placeWord(word);
+      });
+    });
+  </script>
+</body>
+</html>
