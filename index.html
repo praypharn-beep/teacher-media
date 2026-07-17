@@ -1,27 +1,62 @@
 <!doctype html>
-<html lang="th">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>คลังสื่อการสอน — โรงงานสื่อครู</title>
 <style>
-body{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;max-width:760px;margin:0 auto;padding:24px;color:#17364a;background:#f4f9ff}
-h1{font-size:1.5rem}
-.card{background:#fff;border:1px solid #d7e6f5;border-radius:12px;padding:16px;margin:12px 0}
-a{color:#1f7ae0;text-decoration:none;font-weight:600}
-.muted{color:#5b7189;font-size:.9rem}
-</style>
-</head>
-<body>
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;max-width:820px;margin:0 auto;padding:20px;color:#17364a;background:#f4f9ff}
+h1{font-size:1.4rem;margin:.2em 0}
+.sub{color:#5b7189;font-size:.9rem;margin:0 0 16px}
+#q{width:100%;padding:12px 14px;font-size:1rem;border:2px solid #d7e6f5;border-radius:10px}
+.filters{margin:12px 0;display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:6px 14px;border:1px solid #bcd;border-radius:20px;background:#fff;cursor:pointer;font-size:.9rem;user-select:none}
+.chip.on{background:#1f7ae0;color:#fff;border-color:#1f7ae0}
+.count{color:#5b7189;font-size:.85rem;margin:10px 2px}
+.card{background:#fff;border:1px solid #d7e6f5;border-radius:12px;padding:14px;margin:10px 0}
+.card a{color:#1f7ae0;text-decoration:none;font-weight:700;font-size:1.05rem}
+.card a:hover{text-decoration:underline}
+.muted{color:#5b7189;font-size:.86rem;margin-top:5px}
+.tag{display:inline-block;background:#e9f2ff;color:#1f5fa8;border-radius:6px;padding:1px 8px;font-size:.78rem;margin-right:5px}
+footer{color:#8ea3b8;font-size:.8rem;text-align:center;margin-top:28px}
+</style></head><body>
 <h1>🏭 คลังสื่อการสอน — โรงงานสื่อครู</h1>
-<p class="muted">สื่อการสอนที่ผลิตโดยระบบอัตโนมัติ แจกฟรีสำหรับคุณครู เปิดเล่นได้เลยทุกอุปกรณ์</p>
-<div class="card">
-<p><a href="games/J1784195701769.html">🎮 น้องหยด ช่วยโลกหมุนน้ำ</a></p>
-<p class="muted">วิทยาศาสตร์ ป.3 · เรื่องการเกิดฝน (วัฏจักรน้ำ)</p>
-</div>
-<div class="card">
-<p><a href="games/J1784256147282.html">🐉 มังกรมาตรา (เกม AR ควบคุมด้วยมือ)</a></p>
-<p class="muted">ภาษาไทย ป.3 · มาตราตัวสะกด (แม่กก กด กบ กน กง กม เกย เกอว) · เล่นด้วยกล้อง (ท่าจีบนิ้ว) หรือแตะลากบนจอ</p>
-</div>
-</body>
-</html>
+<p class="sub">สื่อที่ผลิตโดยระบบอัตโนมัติ แจกฟรีสำหรับคุณครู เปิดเล่นได้ทุกอุปกรณ์</p>
+<input id="q" placeholder="🔍 ค้นหา เช่น คณิต, เกม, การคูณ...">
+<div class="filters" id="grades"></div>
+<div class="count" id="count"></div>
+<div id="list"></div>
+<footer>อัปเดตอัตโนมัติเมื่อมีสื่อใหม่ผ่านการอนุมัติ</footer>
+<script>
+let ALL=[], grade='';
+fetch('library.json?_='+Date.now()).then(function(r){return r.json();})
+  .then(function(d){ALL=d;initGrades();render();})
+  .catch(function(){document.getElementById('list').innerHTML='<p class="muted">โหลดคลังไม่สำเร็จ ลองรีเฟรชอีกครั้ง</p>';});
+function initGrades(){
+  var gs=Array.from(new Set(ALL.map(function(x){return x.grade;}))).sort();
+  var box=document.getElementById('grades');
+  box.innerHTML='<span class="chip on" data-g="">ทั้งหมด</span>'+
+    gs.map(function(g){return '<span class="chip" data-g="'+g+'">'+g+'</span>';}).join('');
+  Array.prototype.forEach.call(box.querySelectorAll('.chip'),function(c){
+    c.onclick=function(){
+      Array.prototype.forEach.call(box.querySelectorAll('.chip'),function(x){x.classList.remove('on');});
+      c.classList.add('on');grade=c.dataset.g;render();
+    };
+  });
+}
+function esc(s){return String(s).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});}
+function render(){
+  var q=document.getElementById('q').value.trim().toLowerCase();
+  var hit=ALL.filter(function(x){
+    return (!grade||x.grade===grade) &&
+      (!q||(x.subject+' '+x.type+' '+x.topic).toLowerCase().indexOf(q)>=0);
+  });
+  document.getElementById('count').textContent='พบ '+hit.length+' ชิ้น';
+  document.getElementById('list').innerHTML=hit.map(function(x){
+    return '<div class="card"><a href="'+esc(x.url)+'">'+esc(x.type)+' — '+esc(x.topic)+'</a>'+
+      '<div class="muted"><span class="tag">'+esc(x.subject)+'</span>'+
+      '<span class="tag">'+esc(x.grade)+'</span>'+esc(x.date)+'</div></div>';
+  }).join('') || '<p class="muted">ไม่พบสื่อที่ตรงกับคำค้น</p>';
+}
+document.getElementById('q').oninput=render;
+</script></body></html>
