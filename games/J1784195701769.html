@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>น้องหยด ช่วยโลกหมุนน้ำ</title>
+  <style>
+    :root {
+      --sky: #76c7ee;
+      --sky-deep: #3f9ed8;
+      --water: #1f8fca;
+      --river: #0b6fa8;
+      --leaf: #43a95e;
+      --grass: #85c95b;
+      --sun: #ffd15a;
+      --soil: #8b6844;
+      --ink: #17364a;
+      --panel: #ffffff;
+      --soft: #e9f8ff;
+      --good: #237a4b;
+      --warn: #a85a00;
+      --bad: #a63232;
+      font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      background: linear-gradient(#8bd7f5 0%, #e7fbff 58%, #dff3bc 58%, #95d071 100%);
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+
+    button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 800;
+      color: #113247;
+      background: #fff;
+      box-shadow: 0 3px 0 rgba(23, 54, 74, .18);
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(23, 54, 74, .18); }
+    button:focus-visible { outline: 3px solid #123d57; outline-offset: 3px; }
+    button[disabled] { opacity: .55; cursor: default; transform: none; }
+
+    .app {
+      width: min(1040px, 100%);
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0 auto;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 12px;
+      gap: 10px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: rgba(255,255,255,.86);
+      border: 2px solid rgba(255,255,255,.75);
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 8px 20px rgba(28, 91, 124, .12);
+    }
+
+    .brand { min-width: 0; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: clamp(1.05rem, 3.5vw, 1.65rem); line-height: 1.2; }
+    .subtitle { font-size: .92rem; color: #3d6070; margin-top: 2px; }
+
+    .progress-wrap {
+      min-width: 112px;
+      text-align: right;
+      font-weight: 800;
+      color: #255568;
+    }
+
+    .progress {
+      width: 112px;
+      height: 10px;
+      margin-top: 6px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #cfeafa;
+    }
+
+    .progress > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--leaf), var(--sun));
+      transition: width .35s ease;
+    }
+
+    .game {
+      position: relative;
+      overflow: hidden;
+      min-height: 560px;
+      border-radius: 8px;
+      background:
+        radial-gradient(circle at 82% 15%, rgba(255, 209, 90, .45) 0 52px, transparent 53px),
+        linear-gradient(#81d4f4 0%, #e6fbff 56%, #cef0a1 56%, #83c965 100%);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.55), 0 12px 32px rgba(31, 90, 119, .12);
+    }
+
+    .scene {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 560px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 14px;
+    }
+
+    .land {
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 44%;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.25), transparent 50%),
+        linear-gradient(180deg, #9ad86f, #4ea85e);
+      clip-path: polygon(0 30%, 20% 18%, 42% 28%, 62% 10%, 82% 25%, 100% 16%, 100% 100%, 0 100%);
+      pointer-events: none;
+    }
+
+    .river {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 21%;
+      background: linear-gradient(180deg, var(--water), var(--river));
+      border-top: 5px solid rgba(255,255,255,.38);
+      clip-path: polygon(0 35%, 18% 15%, 38% 32%, 54% 8%, 76% 24%, 100% 10%, 100% 100%, 0 100%);
+      pointer-events: none;
+    }
+
+    .playfield {
+      position: relative;
+      z-index: 1;
+      min-height: 520px;
+      border-radius: 8px;
+    }
+
+    .panel {
+      position: relative;
+      z-index: 2;
+      align-self: start;
+      background: rgba(255,255,255,.92);
+      border: 2px solid rgba(255,255,255,.8);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 10px 24px rgba(23, 54, 74, .14);
+    }
+
+    .panel h2 { font-size: 1.2rem; line-height: 1.25; margin-bottom: 8px; }
+    .panel p { line-height: 1.45; font-size: .98rem; }
+
+    .actions {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .primary { background: #ffd15a; }
+    .secondary { background: #dff5ff; }
+    .success { background: #d9f7df; color: var(--good); }
+
+    .helper {
+      margin-top: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: #eef9ff;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .kid {
+      position: absolute;
+      left: min(8vw, 74px);
+      bottom: 23%;
+      width: 104px;
+      height: 128px;
+      z-index: 2;
+      transition: transform .35s ease;
+      pointer-events: none;
+    }
+
+    .drop-body {
+      position: absolute;
+      left: 20px;
+      top: 6px;
+      width: 64px;
+      height: 86px;
+      border-radius: 54% 54% 54% 54% / 64% 64% 42% 42%;
+      background: linear-gradient(145deg, #8ee8ff, #2e9ed8);
+      transform: rotate(45deg);
+      box-shadow: inset 10px 12px 0 rgba(255,255,255,.28), 0 8px 12px rgba(30, 87, 120, .18);
+    }
+
+    .face {
+      position: absolute;
+      left: 28px;
+      top: 40px;
+      width: 48px;
+      height: 30px;
+      transform: rotate(-4deg);
+    }
+
+    .eye {
+      position: absolute;
+      width: 7px;
+      height: 10px;
+      top: 2px;
+      border-radius: 50%;
+      background: #143047;
+    }
+
+    .eye.left { left: 8px; }
+    .eye.right { right: 8px; }
+    .smile {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      width: 20px;
+      height: 10px;
+      border-bottom: 3px solid #143047;
+      border-radius: 0 0 18px 18px;
+    }
+
+    .sun {
+      position: absolute;
+      right: min(8vw, 72px);
+      top: 38px;
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      background: var(--sun);
+      box-shadow: 0 0 0 12px rgba(255,209,90,.24), 0 0 34px rgba(255,177,44,.45);
+      z-index: 1;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .sun.active { animation: shine .6s ease; }
+    @keyframes shine {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.12); }
+    }
+
+    .pond {
+      position: absolute;
+      left: 24%;
+      bottom: 10%;
+      width: 220px;
+      max-width: 48vw;
+      height: 62px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 45% 30%, #94ecff, #1b87bf 70%);
+      box-shadow: inset 0 8px 0 rgba(255,255,255,.32);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .vapor, .rain-drop {
+      position: absolute;
+      width: 18px;
+      height: 24px;
+      border-radius: 60% 60% 60% 60% / 70% 70% 42% 42%;
+      background: rgba(255,255,255,.82);
+      box-shadow: 0 0 10px rgba(255,255,255,.9);
+      z-index: 2;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .vapor.show { animation: floatUp 1.4s ease forwards; }
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(.8); opacity: 0; }
+      20% { opacity: 1; }
+      100% { transform: translateY(-230px) scale(1.05); opacity: 0; }
+    }
+
+    .cloud {
+      position: absolute;
+      top: 126px;
+      left: 44%;
+      width: 186px;
+      height: 72px;
+      z-index: 2;
+      cursor: pointer;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      transition: transform .2s ease, filter .2s ease;
+    }
+
+    .cloud::before,
+    .cloud::after,
+    .cloud .puff {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      background: #fff;
+      border: 3px solid rgba(116, 171, 196, .55);
+      box-shadow: 0 8px 12px rgba(38, 92, 120, .12);
+    }
+
+    .cloud::before { left: 0; width: 98px; height: 52px; border-radius: 42px; }
+    .cloud::after { right: 0; width: 118px; height: 56px; border-radius: 44px; }
+    .cloud .puff { left: 52px; bottom: 18px; width: 78px; height: 72px; border-radius: 50%; }
+    .cloud.full { filter: drop-shadow(0 0 14px rgba(31,143,202,.45)); transform: scale(1.08); }
+
+    .target-ring {
+      position: absolute;
+      top: 64px;
+      left: 42%;
+      width: 230px;
+      height: 142px;
+      border: 4px dashed rgba(255,255,255,.88);
+      border-radius: 50%;
+      z-index: 1;
+      display: none;
+      pointer-events: none;
+    }
+
+    .target-ring.show { display: block; animation: pulse 1s ease infinite; }
+    @keyframes pulse {
+      50% { transform: scale(1.04); opacity: .72; }
+    }
+
+    .rain-drop.fall {
+      opacity: 1;
+      background: #319fd6;
+      animation: rainFall .85s linear forwards;
+    }
+
+    @keyframes rainFall {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(270px); opacity: .2; }
+    }
+
+    .stream {
+      position: absolute;
+      left: 42%;
+      bottom: 18%;
+      width: 24%;
+      height: 12px;
+      border-radius: 999px;
+      background: #35aee7;
+      transform: rotate(10deg) scaleX(0);
+      transform-origin: left center;
+      z-index: 2;
+      box-shadow: 0 0 0 4px rgba(255,255,255,.22);
+      transition: transform .25s ease;
+      pointer-events: none;
+    }
+
+    .stream.flow { transform: rotate(10deg) scaleX(1); }
+
+    .meter {
+      height: 14px;
+      border-radius: 999px;
+      background: #d4edf8;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .meter > span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #33b5e6, #57bd65);
+      transition: width .25s ease;
+    }
+
+    .options {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .option {
+      width: 100%;
+      text-align: left;
+      background: #f5fbff;
+      border: 2px solid transparent;
+      box-shadow: none;
+      font-weight: 750;
+    }
+
+    .option.correct { border-color: #4fb56a; background: #e3f9e8; }
+    .option.wrong { border-color: #da7777; background: #ffe9e9; }
+
+    .cycle {
+      display: none;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .cycle.show { display: grid; }
+    .cycle-step {
+      min-height: 86px;
+      padding: 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.9);
+      border: 2px solid #c7ecf9;
+      font-weight: 800;
+    }
+
+    .cycle-step span {
+      display: block;
+      margin-top: 4px;
+      font-size: .88rem;
+      font-weight: 650;
+      color: #3b6072;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      color: #315b6f;
+      font-size: .9rem;
+      background: rgba(255,255,255,.65);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 760px) {
+      .app { padding: 8px; }
+      .topbar { align-items: flex-start; }
+      .subtitle { font-size: .84rem; }
+      .progress-wrap { min-width: 92px; font-size: .86rem; }
+      .progress { width: 92px; }
+      .game { min-height: calc(100dvh - 128px); }
+      .scene {
+        min-height: calc(100dvh - 128px);
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(315px, 1fr) auto;
+        padding: 10px;
+      }
+      .panel { align-self: end; padding: 12px; }
+      .playfield { min-height: 315px; }
+      .kid { left: 12px; bottom: 22%; width: 86px; transform: scale(.86); transform-origin: left bottom; }
+      .sun { right: 18px; top: 20px; width: 78px; height: 78px; }
+      .pond { left: 24%; bottom: 8%; width: 178px; height: 54px; }
+      .cloud { top: 94px; left: 38%; width: 150px; transform: scale(.85); transform-origin: left top; }
+      .cloud.full { transform: scale(.93); }
+      .target-ring { top: 48px; left: 32%; width: 188px; height: 120px; }
+      .cycle { grid-template-columns: 1fr; }
+      .footer { flex-direction: column; align-items: stretch; }
+      .footer button { width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <h1>น้องหยด ช่วยโลกหมุนน้ำ</h1>
+        <p class="subtitle">เรียนรู้วัฏจักรน้ำ: ระเหย ควบแน่น ตกฝน และไหลกลับ</p>
+      </div>
+      <div class="progress-wrap" aria-live="polite">
+        <span id="stageLabel">ด่าน 1/6</span>
+        <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+      </div>
+    </header>
+
+    <section class="game" aria-label="พื้นที่เล่นเกม">
+      <div class="land"></div>
+      <div class="river"></div>
+      <div class="scene">
+        <div class="playfield" id="playfield">
+          <div class="sun" id="sun" role="button" tabindex="0" aria-label="ดวงอาทิตย์"></div>
+          <div class="pond" aria-hidden="true"></div>
+          <div class="target-ring" id="targetRing" aria-hidden="true"></div>
+          <div class="cloud" id="cloud" role="button" tabindex="0" aria-label="เมฆ">
+            <span class="puff"></span>
+          </div>
+          <div class="kid" id="kid" aria-hidden="true">
+            <div class="drop-body"></div>
+            <div class="face">
+              <span class="eye left"></span>
+              <span class="eye right"></span>
+              <span class="smile"></span>
+            </div>
+          </div>
+          <div class="stream" id="stream" aria-hidden="true"></div>
+        </div>
+
+        <aside class="panel">
+          <h2 id="title">พร้อมช่วยน้องหยดไหม</h2>
+          <p id="copy">น้ำเดินทางวนเป็นวงจร เราจะพาน้องหยดไปทีละขั้น</p>
+          <div class="meter" aria-hidden="true"><span id="meterFill"></span></div>
+          <p class="helper" id="hint">กดเริ่มเกม แล้วทำภารกิจสั้น ๆ ในแต่ละด่าน</p>
+          <div class="actions" id="actions"></div>
+          <div class="options" id="options"></div>
+          <div class="cycle" id="cycle">
+            <div class="cycle-step">1. ระเหย<span>แดดทำให้น้ำกลายเป็นไอ ลอยขึ้นฟ้า</span></div>
+            <div class="cycle-step">2. ควบแน่น<span>ไอน้ำเจออากาศเย็น จับตัวเป็นหยดเล็ก ๆ รวมกันเป็นเมฆ</span></div>
+            <div class="cycle-step">3. ตกฝน<span>เมฆหนักขึ้น น้ำตกลงมาเป็นฝน</span></div>
+            <div class="cycle-step">4. ไหลกลับ<span>น้ำไหลกลับสู่แม่น้ำ ทะเล และเริ่มใหม่</span></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span>เหมาะสำหรับ ป.3 ใช้เมาส์หรือแตะหน้าจอได้</span>
+      <button class="secondary hidden" id="skipBtn" type="button">ข้ามไปสรุป</button>
+    </footer>
+  </main>
+
+  <script>
+    const stages = [
+      {
+        key: "evaporation",
+        name: "ระเหย",
+        title: "ด่าน 1: ระเหย",
+        copy: "น้ำโดนแดด กลายเป็นไอ ลอยขึ้นฟ้า",
+        hint: "แตะดวงอาทิตย์ 5 ครั้ง เพื่อเพิ่มความร้อนให้น้ำระเหย",
+        action: "ส่องแดด",
+        goal: 5
+      },
+      {
+        key: "condensation",
+        name: "ควบแน่น",
+        title: "ด่าน 2: ควบแน่น",
+        copy: "ไอน้ำลอยสูงขึ้นเรื่อย ๆ พออากาศบนฟ้าเย็นลงมาก ไอน้ำจะจับตัวกันเป็นหยดน้ำเล็ก ๆ รวมกันเป็นก้อนเมฆ",
+        hint: "ลากเมฆไปอยู่ในวงบนฟ้าให้เต็ม",
+        action: "ช่วยรวมไอน้ำ",
+        goal: 1
+      },
+      {
+        key: "precipitation",
+        name: "ตกฝน",
+        title: "ด่าน 3: ตกฝน",
+        copy: "เมฆมีหยดน้ำมากขึ้น จึงตกลงมาเป็นฝน",
+        hint: "แตะเมฆ 5 ครั้ง ให้ฝนตกลงมา",
+        action: "เขย่าเมฆ",
+        goal: 5
+      },
+      {
+        key: "collection",
+        name: "ไหลกลับ",
+        title: "ด่าน 4: ไหลกลับ",
+        copy: "น้ำฝนไหลลงลำธาร แม่น้ำ และทะเล แล้ววนกลับมาอีก",
+        hint: "แตะปุ่มให้น้ำไหลกลับสู่แหล่งน้ำ",
+        action: "ให้น้ำไหล",
+        goal: 4
+      }
+    ];
+
+    const bonusQuestions = [
+      {
+        prompt: "สถานการณ์ใดคือ เมฆ",
+        answer: "ไอน้ำรวมตัวสูงบนฟ้า",
+        choices: ["ไอน้ำรวมตัวสูงบนฟ้า", "ไอน้ำลอยใกล้พื้นดิน", "หยดน้ำบนใบไม้ตอนเช้า"]
+      },
+      {
+        prompt: "สถานการณ์ใดคือ หมอก",
+        answer: "ไอน้ำรวมตัวใกล้พื้นดิน",
+        choices: ["ไอน้ำรวมตัวใกล้พื้นดิน", "ฝนไหลลงแม่น้ำ", "น้ำแข็งสีขาวบนพื้น"]
+      },
+      {
+        prompt: "สถานการณ์ใดคือ น้ำค้าง",
+        answer: "หยดน้ำบนใบไม้ตอนเช้า",
+        choices: ["หยดน้ำบนใบไม้ตอนเช้า", "เมฆดำบนฟ้า", "น้ำในทะเลระเหย"]
+      },
+      {
+        prompt: "สถานการณ์ใดคือ น้ำค้างแข็ง",
+        answer: "อากาศหนาวมาก หยดน้ำกลายเป็นผลึกขาว",
+        choices: ["อากาศหนาวมาก หยดน้ำกลายเป็นผลึกขาว", "ไอน้ำกลายเป็นฝนทันที", "น้ำไหลกลับลงคลอง"]
+      }
+    ];
+
+    const state = {
+      screen: "start",
+      stageIndex: 0,
+      stageProgress: 0,
+      bonusIndex: 0,
+      bonusScore: 0,
+      completedMain: false,
+      dragging: false,
+      lastPointerAction: {
+        sun: 0,
+        cloud: 0
+      }
+    };
+
+    const title = document.getElementById("title");
+    const copy = document.getElementById("copy");
+    const hint = document.getElementById("hint");
+    const actions = document.getElementById("actions");
+    const options = document.getElementById("options");
+    const meterFill = document.getElementById("meterFill");
+    const progressBar = document.getElementById("progressBar");
+    const stageLabel = document.getElementById("stageLabel");
+    const sun = document.getElementById("sun");
+    const cloud = document.getElementById("cloud");
+    const targetRing = document.getElementById("targetRing");
+    const playfield = document.getElementById("playfield");
+    const stream = document.getElementById("stream");
+    const kid = document.getElementById("kid");
+    const cycle = document.getElementById("cycle");
+    const skipBtn = document.getElementById("skipBtn");
+
+    function resetVisuals() {
+      sun.classList.remove("active");
+      cloud.classList.remove("full");
+      targetRing.classList.remove("show");
+      stream.classList.remove("flow");
+      cycle.classList.remove("show");
+      kid.style.transform = "";
+      cloud.style.left = "";
+      cloud.style.top = "";
+    }
+
+    function button(text, className, handler) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = text;
+      btn.className = className || "";
+      btn.addEventListener("click", handler);
+      return btn;
+    }
+
+    function updateTop() {
+      const total = 6;
+      let current = 1;
+      if (state.screen === "stage") current = state.stageIndex + 1;
+      if (state.screen === "bonus") current = 5;
+      if (state.screen === "summary") current = 6;
+      stageLabel.textContent = "ด่าน " + current + "/" + total;
+      progressBar.style.width = Math.round((current - 1) / (total - 1) * 100) + "%";
+      skipBtn.classList.toggle("hidden", !state.completedMain || state.screen === "summary");
+    }
+
+    function setMeter() {
+      const stage = stages[state.stageIndex];
+      const pct = Math.min(100, Math.round(state.stageProgress / stage.goal * 100));
+      meterFill.style.width = pct + "%";
+    }
+
+    function renderStart() {
+      state.screen = "start";
+      resetVisuals();
+      title.textContent = "พร้อมช่วยน้องหยดไหม";
+      copy.textContent = "พาน้องหยดเรียนรู้วัฏจักรน้ำ 4 ขั้น แล้วตอบคำถามโบนัส";
+      hint.textContent = "เล่นทีละด่าน ใช้เวลาสั้น ๆ แตะปุ่มหรือสิ่งของบนหน้าจอ";
+      meterFill.style.width = "0%";
+      options.innerHTML = "";
+      actions.innerHTML = "";
+      actions.append(
+        button("เริ่มเกม", "primary", () => renderStage(0)),
+        button("ดูสรุปก่อน", "secondary", renderSummary)
+      );
+      updateTop();
+    }
+
+    function renderStage(index) {
+      state.screen = "stage";
+      state.stageIndex = index;
+      state.stageProgress = 0;
+      resetVisuals();
+      const stage = stages[index];
+      title.textContent = stage.title;
+      copy.textContent = stage.copy;
+      hint.textContent = stage.hint;
+      actions.innerHTML = "";
+      options.innerHTML = "";
+      setMeter();
+
+      if (stage.key === "condensation") {
+        targetRing.classList.add("show");
+        cloud.style.left = "24%";
+        cloud.style.top = "230px";
+        actions.append(button("วางเมฆในวง", "primary", completeCondensation));
+      } else {
+        actions.append(button(stage.action, "primary", progressStage));
+      }
+      updateTop();
+    }
+
+    function progressStage() {
+      const stage = stages[state.stageIndex];
+      state.stageProgress += 1;
+      setMeter();
+
+      if (stage.key === "evaporation") {
+        sun.classList.remove("active");
+        void sun.offsetWidth;
+        sun.classList.add("active");
+        spawnVapor();
+        kid.style.transform = "translateY(" + (-state.stageProgress * 8) + "px)";
+      }
+
+      if (stage.key === "precipitation") {
+        cloud.classList.add("full");
+        spawnRain();
+      }
+
+      if (stage.key === "collection") {
+        stream.classList.add("flow");
+        kid.style.transform = "translateX(" + (state.stageProgress * 18) + "px)";
+      }
+
+      if (state.stageProgress >= stage.goal) {
+        finishStage();
+      }
+    }
+
+    function finishStage() {
+      const lastMain = state.stageIndex === stages.length - 1;
+      hint.textContent = lastMain ? "ครบ 4 ขั้นแล้ว ไปด่านโบนัสกัน" : "เยี่ยม ไปด่านต่อไป";
+      actions.innerHTML = "";
+      actions.append(button(lastMain ? "ไปด่านโบนัส" : "ด่านต่อไป", "success", () => {
+        if (lastMain) {
+          state.completedMain = true;
+          renderBonus();
+        } else {
+          renderStage(state.stageIndex + 1);
+        }
+      }));
+      if (lastMain) state.completedMain = true;
+      updateTop();
+    }
+
+    function completeCondensation() {
+      state.stageProgress = 1;
+      cloud.classList.add("full");
+      cloud.style.left = "44%";
+      cloud.style.top = "126px";
+      setMeter();
+      finishStage();
+    }
+
+    function spawnVapor() {
+      const dot = document.createElement("span");
+      dot.className = "vapor show";
+      dot.style.left = (30 + Math.random() * 18) + "%";
+      dot.style.bottom = (22 + Math.random() * 8) + "%";
+      playfield.appendChild(dot);
+      setTimeout(() => dot.remove(), 1500);
+    }
+
+    function spawnRain() {
+      for (let i = 0; i < 5; i += 1) {
+        const drop = document.createElement("span");
+        drop.className = "rain-drop fall";
+        drop.style.left = (44 + Math.random() * 18) + "%";
+        drop.style.top = (160 + Math.random() * 22) + "px";
+        drop.style.animationDelay = (i * 70) + "ms";
+        playfield.appendChild(drop);
+        setTimeout(() => drop.remove(), 1100);
+      }
+    }
+
+    function renderBonus() {
+      state.screen = "bonus";
+      resetVisuals();
+      const q = bonusQuestions[state.bonusIndex];
+      title.textContent = "โบนัส: เปรียบเทียบให้ถูก";
+      copy.textContent = q.prompt;
+      hint.textContent = "แตะคำตอบที่ตรงกับสถานการณ์";
+      meterFill.style.width = Math.round(state.bonusIndex / bonusQuestions.length * 100) + "%";
+      actions.innerHTML = "";
+      options.innerHTML = "";
+      q.choices.forEach(choice => {
+        const opt = button(choice, "option", () => answerBonus(opt, choice));
+        options.appendChild(opt);
+      });
+      updateTop();
+    }
+
+    function answerBonus(btn, choice) {
+      const q = bonusQuestions[state.bonusIndex];
+      const correct = choice === q.answer;
+      btn.classList.add(correct ? "correct" : "wrong");
+      Array.from(options.children).forEach(child => child.disabled = true);
+      if (correct) {
+        state.bonusScore += 1;
+        hint.textContent = "ถูกต้อง";
+      } else {
+        hint.textContent = "คำตอบที่ถูกคือ: " + q.answer;
+        Array.from(options.children).forEach(child => {
+          if (child.textContent === q.answer) child.classList.add("correct");
+        });
+      }
+      actions.innerHTML = "";
+      actions.append(button(state.bonusIndex === bonusQuestions.length - 1 ? "ดูสรุป" : "ข้อต่อไป", "primary", () => {
+        state.bonusIndex += 1;
+        if (state.bonusIndex >= bonusQuestions.length) renderSummary();
+        else renderBonus();
+      }));
+    }
+
+    function renderSummary() {
+      state.screen = "summary";
+      resetVisuals();
+      title.textContent = "สรุปวัฏจักรน้ำ";
+      copy.textContent = "น้ำระเหยขึ้นฟ้า ควบแน่นเป็นเมฆ ตกลงมาเป็นฝน แล้วไหลกลับสู่แหล่งน้ำ";
+      hint.textContent = "ทำไมวัฏจักรน้ำสำคัญ เลือกคำตอบที่ดีที่สุด";
+      meterFill.style.width = "100%";
+      actions.innerHTML = "";
+      options.innerHTML = "";
+      cycle.classList.add("show");
+      ["น้ำไม่หมดโลกและพืชได้น้ำ", "น้ำหยุดอยู่ที่ทะเลเท่านั้น", "เมฆทำให้ไม่มีแดด"].forEach(choice => {
+        const opt = button(choice, "option", () => answerFinal(opt, choice));
+        options.appendChild(opt);
+      });
+      actions.append(button("เล่นใหม่", "secondary", () => {
+        state.stageIndex = 0;
+        state.bonusIndex = 0;
+        state.bonusScore = 0;
+        state.completedMain = false;
+        renderStart();
+      }));
+      updateTop();
+    }
+
+    function answerFinal(btn, choice) {
+      const correct = choice === "น้ำไม่หมดโลกและพืชได้น้ำ";
+      btn.classList.add(correct ? "correct" : "wrong");
+      Array.from(options.children).forEach(child => child.disabled = true);
+      if (correct) hint.textContent = "ถูกต้อง วัฏจักรน้ำช่วยให้น้ำหมุนเวียนและสิ่งมีชีวิตใช้น้ำได้";
+      else hint.textContent = "ลองจำไว้: วัฏจักรน้ำทำให้น้ำหมุนเวียน ไม่หมดไปง่าย ๆ";
+    }
+
+    function isDuplicateTapAction(target, event) {
+      const now = Date.now();
+      if (event.type === "click" && now - state.lastPointerAction[target] < 450) {
+        event.preventDefault();
+        return true;
+      }
+      if (event.type === "pointerdown") {
+        state.lastPointerAction[target] = now;
+      }
+      return false;
+    }
+
+    function handleSunAction(event) {
+      if (state.screen === "stage" && stages[state.stageIndex].key === "evaporation") {
+        if (isDuplicateTapAction("sun", event)) return;
+        event.preventDefault();
+        progressStage();
+      }
+    }
+
+    function handleCloudAction(event) {
+      if (state.screen === "stage" && stages[state.stageIndex].key === "precipitation") {
+        if (isDuplicateTapAction("cloud", event)) return;
+        event.preventDefault();
+        progressStage();
+      }
+    }
+
+    sun.addEventListener("pointerdown", handleSunAction);
+    sun.addEventListener("click", handleSunAction);
+    cloud.addEventListener("pointerdown", handleCloudAction);
+    cloud.addEventListener("click", handleCloudAction);
+    sun.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") handleSunAction(event);
+    });
+    cloud.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") handleCloudAction(event);
+    });
+
+    cloud.addEventListener("pointerdown", event => {
+      if (state.screen !== "stage" || stages[state.stageIndex].key !== "condensation") return;
+      state.dragging = true;
+      cloud.setPointerCapture(event.pointerId);
+    });
+
+    cloud.addEventListener("pointermove", event => {
+      if (!state.dragging) return;
+      const rect = playfield.getBoundingClientRect();
+      const x = event.clientX - rect.left - cloud.offsetWidth / 2;
+      const y = event.clientY - rect.top - cloud.offsetHeight / 2;
+      cloud.style.left = Math.max(0, Math.min(rect.width - cloud.offsetWidth, x)) + "px";
+      cloud.style.top = Math.max(0, Math.min(rect.height - cloud.offsetHeight, y)) + "px";
+    });
+
+    cloud.addEventListener("pointerup", () => {
+      if (!state.dragging) return;
+      state.dragging = false;
+      const ring = targetRing.getBoundingClientRect();
+      const cloudRect = cloud.getBoundingClientRect();
+      const cloudCenterX = cloudRect.left + cloudRect.width / 2;
+      const cloudCenterY = cloudRect.top + cloudRect.height / 2;
+      if (cloudCenterX > ring.left && cloudCenterX < ring.right && cloudCenterY > ring.top && cloudCenterY < ring.bottom) {
+        completeCondensation();
+      }
+    });
+
+    skipBtn.addEventListener("click", renderSummary);
+
+    renderStart();
+  </script>
+</body>
+</html>
