@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ภารกิจกู้ของเล่น</title>
+  <style>
+    :root {
+      --ink: #22313f;
+      --muted: #5f6f7a;
+      --paper: #fffdf5;
+      --sky: #d8f1ff;
+      --green: #2f9e6d;
+      --blue: #2f73d9;
+      --red: #d34a3f;
+      --yellow: #f4c542;
+      --line: rgba(34,49,63,.16);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, var(--sky) 0 42%, #e8f7d7 42% 100%);
+    }
+
+    button {
+      font: inherit;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      cursor: pointer;
+      border: 0;
+    }
+
+    .app {
+      width: min(980px, 100%);
+      margin: 0 auto;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      background: rgba(255,255,255,.82);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-shadow: 0 6px 18px rgba(52, 77, 93, .12);
+    }
+
+    h1, h2, p { margin: 0; }
+
+    h1 {
+      font-size: clamp(20px, 5vw, 34px);
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: clamp(14px, 3.5vw, 17px);
+    }
+
+    .badge {
+      min-width: 86px;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: center;
+      font-weight: 800;
+      color: var(--blue);
+    }
+
+    .screen {
+      display: grid;
+      grid-template-rows: auto minmax(260px, 1fr) auto;
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .mission {
+      background: rgba(255,255,255,.88);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .mission h2 {
+      font-size: clamp(19px, 4.8vw, 29px);
+      letter-spacing: 0;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: clamp(15px, 3.8vw, 18px);
+      line-height: 1.35;
+    }
+
+    .lab {
+      position: relative;
+      overflow: hidden;
+      border: 3px solid #7cc18e;
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.7), rgba(255,255,255,.25) 48%, transparent 49%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.34) 0 22px, rgba(255,255,255,.08) 22px 44px),
+        #bfe995;
+      min-height: 300px;
+    }
+
+    .track {
+      position: absolute;
+      left: 7%;
+      right: 7%;
+      bottom: 46px;
+      height: 16px;
+      border-radius: 999px;
+      background: #645447;
+      box-shadow: inset 0 3px rgba(255,255,255,.26);
+    }
+
+    .finish, .danger, .target {
+      position: absolute;
+      bottom: 44px;
+      width: 8px;
+      height: 74px;
+      border-radius: 4px;
+    }
+
+    .finish {
+      right: 13%;
+      background: repeating-linear-gradient(180deg, #fff 0 9px, #111 9px 18px);
+    }
+
+    .danger {
+      right: 12%;
+      background: var(--red);
+    }
+
+    .target {
+      left: 14%;
+      background: var(--green);
+    }
+
+    .toy {
+      position: absolute;
+      transform: translate3d(0,0,0);
+      transition: transform .32s ease, opacity .2s ease;
+      will-change: transform;
+    }
+
+    .car {
+      left: 9%;
+      bottom: 64px;
+      width: 96px;
+      height: 48px;
+    }
+
+    .car-body {
+      position: absolute;
+      left: 8px;
+      right: 8px;
+      bottom: 14px;
+      height: 28px;
+      background: #ef6a5b;
+      border-radius: 8px 14px 8px 8px;
+      border: 3px solid #9c2e28;
+    }
+
+    .car-body::before {
+      content: "";
+      position: absolute;
+      left: 16px;
+      top: -16px;
+      width: 34px;
+      height: 18px;
+      border-radius: 10px 10px 0 0;
+      background: #79c7f2;
+      border: 3px solid #2a6287;
+    }
+
+    .wheel {
+      position: absolute;
+      bottom: 4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #263238;
+      border: 4px solid #fff;
+    }
+
+    .wheel.one { left: 18px; }
+    .wheel.two { right: 18px; }
+
+    .box {
+      right: 15%;
+      bottom: 62px;
+      width: 72px;
+      height: 64px;
+      border-radius: 8px;
+      background: #cf9452;
+      border: 4px solid #8b5d29;
+    }
+
+    .box::before, .box::after {
+      content: "";
+      position: absolute;
+      background: rgba(255,255,255,.35);
+    }
+
+    .box::before { left: 30px; top: 0; bottom: 0; width: 8px; }
+    .box::after { left: 0; right: 0; top: 26px; height: 8px; }
+
+    .ball {
+      left: 11%;
+      bottom: 64px;
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff 0 10px, #f6d84a 11px 100%);
+      border: 4px solid #b99012;
+    }
+
+    .table {
+      right: 12%;
+      bottom: 68px;
+      width: 96px;
+      height: 72px;
+      border-top: 14px solid #77533a;
+      border-left: 12px solid #77533a;
+      border-right: 12px solid #77533a;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .rope {
+      position: absolute;
+      bottom: 110px;
+      height: 5px;
+      left: 18%;
+      width: 50%;
+      border-radius: 999px;
+      background: #7e5a34;
+      transform-origin: left center;
+      transition: width .28s ease;
+    }
+
+    .scientist {
+      position: absolute;
+      left: 5%;
+      bottom: 68px;
+      width: 58px;
+      height: 92px;
+    }
+
+    .head {
+      width: 42px;
+      height: 42px;
+      margin: 0 auto;
+      border-radius: 50%;
+      background: #ffd5a8;
+      border: 3px solid #9f6d46;
+    }
+
+    .coat {
+      width: 54px;
+      height: 50px;
+      margin: -2px auto 0;
+      border-radius: 8px;
+      background: #fff;
+      border: 3px solid #78a8b8;
+    }
+
+    .force-arrow {
+      position: absolute;
+      left: 13%;
+      top: 22%;
+      min-width: 84px;
+      height: 32px;
+      border-radius: 999px;
+      background: var(--yellow);
+      border: 3px solid #a87900;
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform .22s ease, left .22s ease;
+    }
+
+    .force-arrow::after {
+      content: "";
+      position: absolute;
+      right: -17px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-left: 20px solid #a87900;
+      border-top: 15px solid transparent;
+      border-bottom: 15px solid transparent;
+    }
+
+    .force-arrow.left {
+      transform-origin: right center;
+    }
+
+    .force-arrow.left::after {
+      right: auto;
+      left: -17px;
+      border-left: 0;
+      border-right: 20px solid #a87900;
+    }
+
+    .sort-area {
+      display: grid;
+      gap: 12px;
+      padding: 14px;
+      height: 100%;
+      grid-template-rows: auto 1fr;
+    }
+
+    .card-force {
+      justify-self: center;
+      align-self: center;
+      width: min(420px, 92%);
+      min-height: 112px;
+      background: #fff;
+      border: 3px solid #2f73d9;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 18px;
+      font-size: clamp(22px, 6vw, 34px);
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(31, 71, 110, .18);
+    }
+
+    .baskets {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .basket {
+      border-radius: 8px;
+      min-height: 112px;
+      border: 3px dashed rgba(34,49,63,.45);
+      background: rgba(255,255,255,.72);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 10px;
+      font-weight: 900;
+      font-size: clamp(16px, 4.5vw, 23px);
+    }
+
+    .status {
+      display: grid;
+      gap: 8px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .meters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .meter {
+      background: #f5f7fb;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .meter strong {
+      display: block;
+      color: var(--ink);
+      font-size: 18px;
+      margin-top: 2px;
+    }
+
+    .feedback {
+      min-height: 48px;
+      border-radius: 8px;
+      padding: 10px;
+      background: #fff8d9;
+      border: 1px solid #e2c55d;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .btn {
+      min-height: 58px;
+      border-radius: 8px;
+      padding: 12px 10px;
+      color: #fff;
+      background: var(--blue);
+      font-size: clamp(17px, 4.6vw, 22px);
+      font-weight: 900;
+      box-shadow: 0 5px 0 #1b4f9b;
+    }
+
+    .btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #1b4f9b;
+    }
+
+    .btn.green { background: var(--green); box-shadow: 0 5px 0 #1d6948; }
+    .btn.red { background: var(--red); box-shadow: 0 5px 0 #8e2c27; }
+    .btn.yellow { background: #d99a15; box-shadow: 0 5px 0 #875d09; }
+    .btn.dark { background: #455a64; box-shadow: 0 5px 0 #263238; }
+
+    .btn[disabled] {
+      opacity: .52;
+      pointer-events: none;
+      box-shadow: none;
+    }
+
+    .summary {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 14px;
+    }
+
+    .summary-panel {
+      width: min(680px, 100%);
+      background: rgba(255,255,255,.92);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: clamp(16px, 4vw, 28px);
+      display: grid;
+      gap: 14px;
+      text-align: center;
+    }
+
+    .stars {
+      font-size: clamp(34px, 11vw, 58px);
+      letter-spacing: 0;
+      color: #d99a15;
+      font-weight: 900;
+    }
+
+    .summary-lines {
+      display: grid;
+      gap: 8px;
+      text-align: left;
+      font-size: clamp(16px, 4vw, 20px);
+      line-height: 1.4;
+    }
+
+    @media (min-width: 760px) {
+      .screen {
+        grid-template-columns: 1.15fr .85fr;
+        grid-template-rows: auto 1fr;
+      }
+
+      .mission { grid-column: 1 / -1; }
+      .status { align-self: stretch; }
+      .controls { grid-template-columns: 1fr; align-content: end; }
+      .lab { min-height: 430px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>ภารกิจกู้ของเล่น</h1>
+        <p class="subtitle">นักวิทยาศาสตร์ตัวจิ๋วใช้แรงช่วยเก็บของเล่นให้เข้าที่</p>
+      </div>
+      <div class="badge" id="scoreBadge">ดาว 0</div>
+    </header>
+
+    <section id="screen" class="screen" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const scenes = [
+      {
+        id: 1,
+        title: "ด่าน 1 รถของเล่นค้าง",
+        goal: "ช่วยให้รถไปถึงเส้นชัย ลองผลักเบาหรือผลักแรง",
+        kind: "push",
+        actions: ["ผลักเบา", "ผลักแรง"],
+        success: "เยี่ยมมาก! แรงผลักทำให้รถเคลื่อนที่ และผลักแรงทำให้รถเร็วขึ้น",
+      },
+      {
+        id: 2,
+        title: "ด่าน 2 รถพุ่งเร็วเกิน",
+        goal: "กดหยุดให้ทันก่อนรถชนกล่อง",
+        kind: "stop",
+        actions: ["หยุด"],
+        success: "ดีมาก! แรงช่วยทำให้วัตถุที่กำลังเคลื่อนที่หยุดได้",
+      },
+      {
+        id: 3,
+        title: "ด่าน 3 ลูกบอลจะชนโต๊ะ",
+        goal: "กดเปลี่ยนทางให้ลูกบอลเลี้ยวหลบโต๊ะ",
+        kind: "turn",
+        actions: ["เปลี่ยนทาง"],
+        success: "ถูกต้อง! แรงทำให้วัตถุเปลี่ยนทิศทางการเคลื่อนที่ได้",
+      },
+      {
+        id: 4,
+        title: "ด่าน 4 กล่องของเล่นหนัก",
+        goal: "กดดึงเพื่อใช้เชือกลากกล่องเข้าตำแหน่งสีเขียว",
+        kind: "pull",
+        actions: ["ดึง"],
+        success: "ยอดเยี่ยม! แรงดึงช่วยลากวัตถุเข้าหาเราได้",
+      },
+      {
+        id: 5,
+        title: "ด่าน 5 จัดของเล่นเข้าตะกร้า",
+        goal: "ดูสถานการณ์ แล้วเลือกตะกร้าแรงสัมผัสหรือแรงไม่สัมผัส",
+        kind: "sort",
+        actions: ["แรงสัมผัส", "แรงไม่สัมผัส"],
+        success: "เก่งมาก! แยกแรงสัมผัสกับแรงไม่สัมผัสได้แล้ว",
+      },
+    ];
+
+    const sortItems = [
+      { text: "มือผลักรถ", type: "แรงสัมผัส", note: "มือแตะรถ จึงเป็นแรงสัมผัส" },
+      { text: "เชือกดึงกล่อง", type: "แรงสัมผัส", note: "เชือกแตะกล่อง จึงเป็นแรงสัมผัส" },
+      { text: "แม่เหล็กดูดคลิป", type: "แรงไม่สัมผัส", note: "แม่เหล็กดูดได้โดยไม่ต้องแตะกัน" },
+      { text: "แอปเปิลตกจากต้น", type: "แรงไม่สัมผัส", note: "แรงโน้มถ่วงดึงลงโดยไม่ต้องแตะ" },
+    ];
+
+    const state = {
+      sceneIndex: 0,
+      attempts: 0,
+      successes: 0,
+      locked: false,
+      complete: false,
+      x: 0,
+      y: 0,
+      speed: 0,
+      timer: 0,
+      sortIndex: 0,
+      feedback: "อ่านภารกิจ แล้วแตะปุ่มใหญ่ด้านล่างเพื่อทดลองแรง",
+      metricA: "พร้อม",
+      metricB: "ยังไม่เคลื่อนที่",
+    };
+
+    const screen = document.querySelector("#screen");
+    const scoreBadge = document.querySelector("#scoreBadge");
+    let lastTap = 0;
+    let loopId = 0;
+
+    function resetScene() {
+      cancelAnimationFrame(loopId);
+      state.locked = false;
+      state.complete = false;
+      state.x = 0;
+      state.y = 0;
+      state.speed = 0;
+      state.timer = 0;
+      state.sortIndex = 0;
+      state.feedback = "อ่านภารกิจ แล้วแตะปุ่มใหญ่ด้านล่างเพื่อทดลองแรง";
+      state.metricA = "พร้อม";
+      state.metricB = "ยังไม่เคลื่อนที่";
+    }
+
+    function updateBadge() {
+      scoreBadge.textContent = "ดาว " + state.successes;
+    }
+
+    function render() {
+      updateBadge();
+      if (state.sceneIndex >= scenes.length) {
+        renderSummary();
+        return;
+      }
+
+      const scene = scenes[state.sceneIndex];
+      screen.className = "screen";
+      screen.innerHTML = `
+        <section class="mission">
+          <h2>${scene.title}</h2>
+          <p class="hint">${scene.goal}</p>
+        </section>
+        <section class="lab" id="lab">${renderLab(scene)}</section>
+        <section class="status">
+          <div class="meters">
+            <div class="meter">สถานะ<strong id="metricA">${state.metricA}</strong></div>
+            <div class="meter">การเคลื่อนที่<strong id="metricB">${state.metricB}</strong></div>
+          </div>
+          <div class="feedback" id="feedback">${state.feedback}</div>
+          <div class="controls">
+            ${scene.actions.map(action => `<button class="btn ${buttonClass(action)}" data-action="${action}">${action}</button>`).join("")}
+            <button class="btn dark" data-action="เริ่มด่านใหม่">เริ่มด่านใหม่</button>
+            ${state.complete ? `<button class="btn green" data-action="ด่านต่อไป">ด่านต่อไป</button>` : ""}
+          </div>
+        </section>
+      `;
+
+      bindButtons();
+      applyMotion();
+      if (scene.kind === "stop" || scene.kind === "turn") startLoop(scene.kind);
+    }
+
+    function renderLab(scene) {
+      if (scene.kind === "sort") {
+        const item = sortItems[state.sortIndex];
+        return `
+          <div class="sort-area">
+            <div class="card-force">${item ? item.text : "จัดครบแล้ว"}</div>
+            <div class="baskets">
+              <div class="basket">แรงสัมผัส<br><span class="hint">ต้องแตะวัตถุ</span></div>
+              <div class="basket">แรงไม่สัมผัส<br><span class="hint">ไม่ต้องแตะวัตถุ</span></div>
+            </div>
+          </div>
+        `;
+      }
+
+      const common = `<div class="track"></div><div class="force-arrow" id="arrow"></div>`;
+      if (scene.kind === "push") return `${common}<div class="finish"></div><div class="toy car" id="toy">${carHtml()}</div>`;
+      if (scene.kind === "stop") return `${common}<div class="toy box"></div><div class="toy car" id="toy">${carHtml()}</div>`;
+      if (scene.kind === "turn") return `${common}<div class="table"></div><div class="toy ball" id="toy"></div>`;
+      return `${common}<div class="target"></div><div class="scientist"><div class="head"></div><div class="coat"></div></div><div class="rope" id="rope"></div><div class="toy box" id="toy"></div>`;
+    }
+
+    function carHtml() {
+      return `<div class="car-body"></div><div class="wheel one"></div><div class="wheel two"></div>`;
+    }
+
+    function buttonClass(action) {
+      if (action === "หยุด") return "red";
+      if (action === "ดึง" || action === "ด่านต่อไป") return "green";
+      if (action === "ผลักแรง") return "yellow";
+      return "";
+    }
+
+    function bindButtons() {
+      document.querySelectorAll("button[data-action]").forEach(button => {
+        const run = (event) => {
+          event.preventDefault();
+          const now = Date.now();
+          if (now - lastTap < 220) return;
+          lastTap = now;
+          handleAction(button.dataset.action);
+        };
+        button.addEventListener("pointerup", run);
+        button.addEventListener("click", run);
+      });
+    }
+
+    function setStatus(feedback, metricA, metricB) {
+      state.feedback = feedback;
+      state.metricA = metricA;
+      state.metricB = metricB;
+      const feedbackEl = document.querySelector("#feedback");
+      const metricAEl = document.querySelector("#metricA");
+      const metricBEl = document.querySelector("#metricB");
+      if (feedbackEl) feedbackEl.textContent = feedback;
+      if (metricAEl) metricAEl.textContent = metricA;
+      if (metricBEl) metricBEl.textContent = metricB;
+    }
+
+    function handleAction(action) {
+      if (action === "เริ่มด่านใหม่") {
+        resetScene();
+        render();
+        return;
+      }
+
+      if (action === "ด่านต่อไป") {
+        state.sceneIndex += 1;
+        resetScene();
+        render();
+        return;
+      }
+
+      if (state.locked) return;
+      const scene = scenes[state.sceneIndex];
+      state.attempts += 1;
+
+      if (scene.kind === "push") handlePush(action, scene);
+      if (scene.kind === "stop") handleStop(scene);
+      if (scene.kind === "turn") handleTurn(scene);
+      if (scene.kind === "pull") handlePull(scene);
+      if (scene.kind === "sort") handleSort(action, scene);
+    }
+
+    function handlePush(action, scene) {
+      const move = action === "ผลักแรง" ? 125 : 58;
+      state.x = Math.min(380, state.x + move);
+      state.speed = action === "ผลักแรง" ? 2 : 1;
+      showArrow(false, action === "ผลักแรง" ? 1.35 : .8);
+      setStatus("รถขยับแล้ว ลองสังเกตว่าแรงมากทำให้เคลื่อนที่เร็วขึ้น", action, state.speed === 2 ? "เร็วขึ้น" : "เคลื่อนที่ช้า");
+      applyMotion();
+      if (state.x >= 250) finishScene(scene);
+    }
+
+    function handleStop(scene) {
+      cancelAnimationFrame(loopId);
+      showArrow(true, 1);
+      if (state.x < 330) {
+        state.speed = 0;
+        setStatus("หยุดทันก่อนชนกล่อง", "ใช้แรงหยุด", "หยุดแล้ว");
+        finishScene(scene);
+      } else {
+        state.speed = 0;
+        state.locked = true;
+        setStatus("รถใกล้กล่องเกินไป ลองเริ่มด่านใหม่แล้วหยุดให้ไวขึ้น", "ชนกล่อง", "หยุดช้าไป");
+        render();
+      }
+    }
+
+    function handleTurn(scene) {
+      cancelAnimationFrame(loopId);
+      state.y = -105;
+      showArrow(false, .95);
+      setStatus("ลูกบอลเลี้ยวหลบโต๊ะได้", "เปลี่ยนทาง", "ทิศทางเปลี่ยน");
+      applyMotion();
+      finishScene(scene);
+    }
+
+    function handlePull(scene) {
+      state.x = Math.max(-320, state.x - 92);
+      showArrow(true, 1);
+      setStatus("กล่องเลื่อนเข้าหาเชือกแล้ว", "ดึง", "เข้าใกล้เป้าหมาย");
+      applyMotion();
+      const rope = document.querySelector("#rope");
+      if (rope) rope.style.width = Math.max(16, 50 + state.x / 8) + "%";
+      if (state.x <= -260) finishScene(scene);
+    }
+
+    function handleSort(action, scene) {
+      const item = sortItems[state.sortIndex];
+      if (!item) return;
+      if (action === item.type) {
+        state.sortIndex += 1;
+        if (state.sortIndex >= sortItems.length) {
+          setStatus(item.note, "จัดครบ", "เข้าใจแรง");
+          finishScene(scene);
+        } else {
+          setStatus(item.note, "ถูกต้อง", "ดูใบถัดไป");
+          render();
+        }
+      } else {
+        setStatus("ลองคิดอีกที ต้องแตะวัตถุไหมนะ?", "ลองใหม่ได้", "ยังไม่ผ่าน");
+      }
+    }
+
+    function finishScene(scene) {
+      if (!state.complete) state.successes += 1;
+      state.complete = true;
+      state.locked = true;
+      setStatus(scene.success, "ผ่านด่าน", "พร้อมไปต่อ");
+      render();
+    }
+
+    function applyMotion() {
+      const toy = document.querySelector("#toy");
+      if (toy) toy.style.transform = `translate3d(${state.x}px, ${state.y}px, 0)`;
+    }
+
+    function showArrow(left, scale) {
+      const arrow = document.querySelector("#arrow");
+      if (!arrow) return;
+      arrow.classList.toggle("left", left);
+      arrow.style.left = left ? "34%" : "14%";
+      arrow.style.transform = `scaleX(${scale})`;
+      window.setTimeout(() => {
+        if (arrow) arrow.style.transform = "scaleX(0)";
+      }, 420);
+    }
+
+    function startLoop(kind) {
+      let last = performance.now();
+      state.speed = kind === "stop" ? 1.05 : .9;
+      function tick(now) {
+        if (state.complete || state.locked || scenes[state.sceneIndex].kind !== kind) return;
+        const delta = Math.min(32, now - last);
+        last = now;
+        state.x += state.speed * delta / 1.4;
+        if (kind === "turn") state.y += Math.sin(now / 180) * .25;
+        applyMotion();
+        if (kind === "stop" && state.x > 390) {
+          state.locked = true;
+          setStatus("รถชนกล่องแล้ว ลองเริ่มด่านใหม่แล้วกดหยุดให้ทัน", "ชนกล่อง", "ลองใหม่");
+          render();
+          return;
+        }
+        if (kind === "turn" && state.x > 390) {
+          state.locked = true;
+          setStatus("ลูกบอลชนโต๊ะ ลองเริ่มด่านใหม่แล้วกดเปลี่ยนทางก่อนถึงโต๊ะ", "ชนโต๊ะ", "ลองใหม่");
+          render();
+          return;
+        }
+        loopId = requestAnimationFrame(tick);
+      }
+      loopId = requestAnimationFrame(tick);
+    }
+
+    function renderSummary() {
+      const effort = state.attempts <= 9 ? "พยายามได้ดีมาก" : "ฝึกหลายครั้งแล้วเก่งขึ้น";
+      screen.className = "summary";
+      screen.innerHTML = `
+        <section class="summary-panel">
+          <h2>สรุปภารกิจ</h2>
+          <div class="stars">${"★".repeat(state.successes)}${"☆".repeat(Math.max(0, 5 - state.successes))}</div>
+          <p class="hint">${effort} ได้ดาว ${state.successes} ดวง จาก 5 ด่าน</p>
+          <div class="summary-lines">
+            <p>1. แรงผลักและแรงดึงทำให้วัตถุเคลื่อนที่ หยุด เปลี่ยนทาง หรือเร็วขึ้นช้าลงได้</p>
+            <p>2. แรงสัมผัสต้องแตะวัตถุ เช่น ผลัก ดึง เตะ</p>
+            <p>3. แรงไม่สัมผัสไม่ต้องแตะวัตถุ เช่น แม่เหล็กดูด และแรงโน้มถ่วงทำให้ของตกลงพื้น</p>
+          </div>
+          <button class="btn green" data-action="เล่นอีกครั้ง">เล่นอีกครั้ง</button>
+        </section>
+      `;
+      document.querySelector("[data-action='เล่นอีกครั้ง']").addEventListener("pointerup", (event) => {
+        event.preventDefault();
+        state.sceneIndex = 0;
+        state.attempts = 0;
+        state.successes = 0;
+        resetScene();
+        render();
+      });
+      document.querySelector("[data-action='เล่นอีกครั้ง']").addEventListener("click", (event) => {
+        event.preventDefault();
+        state.sceneIndex = 0;
+        state.attempts = 0;
+        state.successes = 0;
+        resetScene();
+        render();
+      });
+    }
+
+    resetScene();
+    render();
+  </script>
+</body>
+</html>
