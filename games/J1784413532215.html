@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>โรงงานแบ่งของ</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1e293b;
+      --muted: #526173;
+      --paper: #fffaf0;
+      --panel: #ffffff;
+      --line: #d8e1ea;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --green: #16a34a;
+      --orange: #f97316;
+      --red: #dc2626;
+      --yellow: #facc15;
+      --shadow: 0 12px 30px rgba(30, 41, 59, .14);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(219, 234, 254, .9), rgba(254, 243, 199, .65)),
+        repeating-linear-gradient(90deg, rgba(37, 99, 235, .06) 0 14px, transparent 14px 28px);
+    }
+
+    body {
+      min-height: 100svh;
+      display: flex;
+      justify-content: center;
+      padding: 14px;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button {
+      touch-action: manipulation;
+      cursor: pointer;
+      border: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      width: min(100%, 520px);
+      min-height: calc(100svh - 28px);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .topbar {
+      background: rgba(255, 255, 255, .9);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 8px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.35rem, 6vw, 2rem);
+      line-height: 1.1;
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #075985;
+      padding: 6px 10px;
+      font-weight: 800;
+      font-size: .9rem;
+    }
+
+    .helper {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      color: var(--muted);
+      font-size: .95rem;
+      line-height: 1.35;
+    }
+
+    .helper span {
+      display: block;
+      padding: 7px 9px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+    }
+
+    .progress {
+      width: 100%;
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e5e7eb;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+      transition: width .25s ease;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .screen, .game-panel {
+      background: rgba(255, 255, 255, .94);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .screen {
+      flex: 1;
+      display: none;
+      align-items: stretch;
+      justify-content: center;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .screen.active { display: flex; }
+
+    .intro-art {
+      min-height: 180px;
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, #bae6fd 0 48%, #e2e8f0 48% 100%);
+      border: 1px solid #bfdbfe;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .factory {
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      bottom: 24px;
+      height: 82px;
+      background: #94a3b8;
+      border: 4px solid #64748b;
+      border-radius: 8px 8px 4px 4px;
+    }
+
+    .factory::before {
+      content: "";
+      position: absolute;
+      left: 18px;
+      top: -38px;
+      width: 42px;
+      height: 38px;
+      background: #64748b;
+      border-radius: 6px 6px 0 0;
+      box-shadow: 58px 18px 0 #f97316, 116px 8px 0 #2563eb, 176px 22px 0 #16a34a;
+    }
+
+    .belt {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 20px;
+      height: 34px;
+      background:
+        repeating-linear-gradient(90deg, #334155 0 18px, #475569 18px 36px);
+      border-block: 5px solid #1e293b;
+    }
+
+    .moving-items {
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      bottom: 62px;
+      display: flex;
+      justify-content: space-around;
+      font-size: 28px;
+      animation: bob 1.3s ease-in-out infinite alternate;
+    }
+
+    @keyframes bob {
+      from { transform: translateY(0); }
+      to { transform: translateY(-7px); }
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      line-height: 1.25;
+    }
+
+    p {
+      margin: 0;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .stage-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: .92rem;
+    }
+
+    .question {
+      font-size: clamp(1.1rem, 4.8vw, 1.45rem);
+      font-weight: 900;
+      line-height: 1.3;
+      color: #0f172a;
+    }
+
+    .visual {
+      min-height: 210px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: linear-gradient(180deg, #eff6ff, #f8fafc);
+      padding: 10px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      overflow: hidden;
+    }
+
+    .conveyor {
+      min-height: 54px;
+      border-radius: 8px;
+      background:
+        repeating-linear-gradient(90deg, #334155 0 20px, #475569 20px 40px);
+      border: 4px solid #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .item {
+      flex: 0 0 auto;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #fef3c7;
+      border: 2px solid #f59e0b;
+      box-shadow: inset 0 -3px rgba(0, 0, 0, .08);
+      font-size: 20px;
+    }
+
+    .box-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+      gap: 8px;
+    }
+
+    .box {
+      min-height: 78px;
+      border: 2px solid #94a3b8;
+      background: #fff7ed;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px;
+      gap: 4px;
+    }
+
+    .box-name {
+      color: #475569;
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    .box-items {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 3px;
+      min-height: 30px;
+    }
+
+    .tiny {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      background: #fde68a;
+      border: 1px solid #f59e0b;
+    }
+
+    .leftover {
+      border: 2px dashed var(--orange);
+      background: #fff7ed;
+      border-radius: 8px;
+      padding: 8px;
+      font-weight: 800;
+      color: #9a3412;
+      text-align: center;
+    }
+
+    .answer-area {
+      display: grid;
+      gap: 10px;
+    }
+
+    .counter {
+      display: grid;
+      grid-template-columns: 54px 1fr 54px;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .count-display {
+      min-height: 52px;
+      border-radius: 8px;
+      border: 2px solid #bfdbfe;
+      background: #eff6ff;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #1d4ed8;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    input {
+      width: 100%;
+      min-height: 54px;
+      border: 2px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #1d4ed8;
+      background: #f8fafc;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .btn {
+      min-height: 52px;
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: var(--blue);
+      color: white;
+      font-weight: 900;
+      box-shadow: 0 6px 0 var(--blue-dark);
+      transition: transform .05s ease, box-shadow .05s ease, background .2s ease;
+    }
+
+    .btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 var(--blue-dark);
+    }
+
+    .btn.secondary {
+      color: #0f172a;
+      background: #e2e8f0;
+      box-shadow: 0 6px 0 #94a3b8;
+    }
+
+    .btn.good {
+      background: var(--green);
+      box-shadow: 0 6px 0 #15803d;
+    }
+
+    .btn.warn {
+      background: var(--orange);
+      box-shadow: 0 6px 0 #c2410c;
+    }
+
+    .icon-btn {
+      min-height: 54px;
+      border-radius: 8px;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 1.5rem;
+      font-weight: 900;
+      box-shadow: 0 5px 0 #93c5fd;
+    }
+
+    .feedback {
+      min-height: 54px;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      line-height: 1.35;
+      font-weight: 800;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      color: var(--muted);
+    }
+
+    .feedback.correct {
+      color: #166534;
+      background: #dcfce7;
+      border-color: #86efac;
+    }
+
+    .feedback.hint {
+      color: #9a3412;
+      background: #ffedd5;
+      border-color: #fdba74;
+    }
+
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      font-size: clamp(2rem, 14vw, 4rem);
+      color: var(--yellow);
+      text-shadow: 0 3px 0 #ca8a04;
+    }
+
+    .summary-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .summary-list div {
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      padding: 10px;
+      font-weight: 800;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 380px) {
+      body { padding: 8px; }
+      .app { min-height: calc(100svh - 16px); }
+      .screen, .game-panel, .topbar { padding: 10px; }
+      .choices { grid-template-columns: 1fr; }
+      .field-grid { grid-template-columns: 1fr; }
+      .visual { min-height: 190px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar" aria-label="ข้อมูลเกม">
+      <div class="title-row">
+        <h1>โรงงานแบ่งของ</h1>
+        <div class="badge" id="scoreBadge">ดาว 0</div>
+      </div>
+      <div class="helper" aria-label="ป้ายช่วยคิด">
+        <span>ตัวตั้ง = ของทั้งหมด</span>
+        <span>ตัวหาร = จำนวนกลุ่ม หรือ จำนวนต่อกลุ่ม</span>
+      </div>
+      <div class="progress" aria-label="ความคืบหน้า">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="screen active" id="startScreen">
+        <div class="intro-art" aria-hidden="true">
+          <div class="factory"></div>
+          <div class="belt"></div>
+          <div class="moving-items">
+            <span>▣</span><span>●</span><span>◆</span><span>■</span>
+          </div>
+        </div>
+        <h2>เป็นหัวหน้าสายพาน แบ่งของให้เท่ากัน</h2>
+        <p>เล่น 3 ด่าน ด่านละ 4 ข้อ เริ่มจากดูภาพ แล้วค่อยตอบโจทย์ตัวเลขและโจทย์ปัญหา</p>
+        <button class="btn good" id="startBtn" type="button">เริ่มเล่น</button>
+      </section>
+
+      <section class="game-panel screen" id="playScreen" aria-live="polite">
+        <div class="stage-line">
+          <span id="stageText">ด่าน 1</span>
+          <span id="questionText">ข้อ 1 จาก 12</span>
+        </div>
+        <div class="question" id="promptText"></div>
+        <div class="visual" id="visualArea"></div>
+        <div class="answer-area" id="answerArea"></div>
+        <div class="feedback" id="feedback">แตะเลือกคำตอบ แล้วกดตรวจคำตอบ</div>
+      </section>
+
+      <section class="screen" id="endScreen">
+        <h2>สรุปงานในโรงงาน</h2>
+        <div class="stars" id="starLine" aria-label="ดาวที่ได้รับ"></div>
+        <p id="effortText"></p>
+        <div class="summary-list">
+          <div>การหารคือการแบ่งของให้เท่า ๆ กัน</div>
+          <div>ผลหาร = ได้กลุ่มละเท่าไร หรือได้กี่กลุ่ม</div>
+          <div>เศษ = ของที่เหลือ แบ่งต่อให้ครบกลุ่มไม่ได้</div>
+        </div>
+        <button class="btn good" id="againBtn" type="button">เล่นอีกครั้ง</button>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const questions = [
+      { stage: 1, title: "ด่านต้น: แบ่งด้วยภาพ", total: 12, divisor: 3, kind: "equalGroups", itemName: "ชิ้น", prompt: "มีของ 12 ชิ้น แบ่งออกเป็น 3 กล่องเท่า ๆ กัน กล่องละกี่ชิ้น", answer: 4 },
+      { stage: 1, title: "ด่านต้น: แบ่งด้วยภาพ", total: 20, divisor: 5, kind: "equalGroups", itemName: "ชิ้น", prompt: "มีของ 20 ชิ้น แบ่งออกเป็น 5 กล่องเท่า ๆ กัน กล่องละกี่ชิ้น", answer: 4 },
+      { stage: 1, title: "ด่านต้น: แบ่งด้วยภาพ", total: 18, divisor: 2, kind: "equalGroups", itemName: "ชิ้น", prompt: "มีของ 18 ชิ้น แบ่งออกเป็น 2 กล่องเท่า ๆ กัน กล่องละกี่ชิ้น", answer: 9 },
+      { stage: 1, title: "ด่านต้น: แบ่งด้วยภาพ", total: 16, divisor: 4, kind: "equalGroups", itemName: "ชิ้น", prompt: "มีของ 16 ชิ้น แบ่งออกเป็น 4 กล่องเท่า ๆ กัน กล่องละกี่ชิ้น", answer: 4 },
+      { stage: 2, title: "ด่านกลาง: ผลหารและเศษ", total: 27, divisor: 4, prompt: "27 ÷ 4 ได้ผลหารและเศษเท่าไร", quotient: 6, remainder: 3 },
+      { stage: 2, title: "ด่านกลาง: ผลหารและเศษ", total: 35, divisor: 6, prompt: "35 ÷ 6 ได้ผลหารและเศษเท่าไร", quotient: 5, remainder: 5 },
+      { stage: 2, title: "ด่านกลาง: ผลหารและเศษ", total: 46, divisor: 8, prompt: "46 ÷ 8 ได้ผลหารและเศษเท่าไร", quotient: 5, remainder: 6 },
+      { stage: 2, title: "ด่านกลาง: ผลหารและเศษ", total: 59, divisor: 12, prompt: "59 ÷ 12 ได้ผลหารและเศษเท่าไร", quotient: 4, remainder: 11 },
+      { stage: 3, title: "ด่านท้าย: โจทย์ปัญหา", total: 36, divisor: 6, prompt: "มีดินสอ 36 แท่ง แบ่งออกเป็น 6 กลุ่มเท่า ๆ กัน กลุ่มละกี่แท่ง", answer: 6, unit: "แท่ง", choices: [4, 5, 6, 7] },
+      { stage: 3, title: "ด่านท้าย: โจทย์ปัญหา", total: 48, divisor: 8, prompt: "มีส้ม 48 ผล แบ่งออกเป็น 8 ถุงเท่า ๆ กัน ถุงละกี่ผล", answer: 6, unit: "ผล", choices: [5, 6, 7, 8] },
+      { stage: 3, title: "ด่านท้าย: โจทย์ปัญหา", total: 42, divisor: 7, prompt: "มีสมุด 42 เล่ม แบ่งออกเป็น 7 กองเท่า ๆ กัน กองละกี่เล่ม", answer: 6, unit: "เล่ม", choices: [5, 6, 7, 9] },
+      { stage: 3, title: "ด่านท้าย: โจทย์ปัญหา", total: 63, divisor: 9, prompt: "มีลูกปัด 63 เม็ด แบ่งออกเป็น 9 กลุ่มเท่า ๆ กัน กลุ่มละกี่เม็ด", answer: 7, unit: "เม็ด", choices: [6, 7, 8, 9] }
+    ];
+
+    const state = {
+      index: 0,
+      score: 0,
+      tries: 0,
+      stageOneAnswer: 1,
+      selectedChoice: null,
+      answered: false,
+      lockedUntil: 0
+    };
+
+    const startScreen = document.getElementById("startScreen");
+    const playScreen = document.getElementById("playScreen");
+    const endScreen = document.getElementById("endScreen");
+    const scoreBadge = document.getElementById("scoreBadge");
+    const progressFill = document.getElementById("progressFill");
+    const stageText = document.getElementById("stageText");
+    const questionText = document.getElementById("questionText");
+    const promptText = document.getElementById("promptText");
+    const visualArea = document.getElementById("visualArea");
+    const answerArea = document.getElementById("answerArea");
+    const feedback = document.getElementById("feedback");
+    const starLine = document.getElementById("starLine");
+    const effortText = document.getElementById("effortText");
+
+    document.getElementById("startBtn").addEventListener("click", startGame);
+    document.getElementById("againBtn").addEventListener("click", startGame);
+
+    function guarded(action) {
+      const now = Date.now();
+      if (now < state.lockedUntil) return;
+      state.lockedUntil = now + 220;
+      action();
+    }
+
+    function showScreen(screen) {
+      [startScreen, playScreen, endScreen].forEach(item => item.classList.remove("active"));
+      screen.classList.add("active");
+    }
+
+    function startGame() {
+      state.index = 0;
+      state.score = 0;
+      state.tries = 0;
+      state.stageOneAnswer = 1;
+      state.selectedChoice = null;
+      state.answered = false;
+      updateScore();
+      showScreen(playScreen);
+      renderQuestion();
+    }
+
+    function updateScore() {
+      scoreBadge.textContent = `ดาว ${state.score}`;
+      progressFill.style.width = `${Math.round((state.index / questions.length) * 100)}%`;
+    }
+
+    function renderQuestion() {
+      const q = questions[state.index];
+      state.stageOneAnswer = q.stage === 1 ? 1 : 0;
+      state.selectedChoice = null;
+      state.answered = false;
+      stageText.textContent = q.title;
+      questionText.textContent = `ข้อ ${state.index + 1} จาก ${questions.length}`;
+      promptText.textContent = q.prompt;
+      feedback.className = "feedback";
+      feedback.textContent = "แตะเลือกคำตอบ แล้วกดตรวจคำตอบ";
+      visualArea.innerHTML = "";
+      answerArea.innerHTML = "";
+
+      if (q.stage === 1) renderStageOne(q);
+      if (q.stage === 2) renderStageTwo(q);
+      if (q.stage === 3) renderStageThree(q);
+      updateScore();
+    }
+
+    function renderItems(count, small) {
+      return Array.from({ length: count }, () => small ? "<span class=\"tiny\"></span>" : "<span class=\"item\">●</span>").join("");
+    }
+
+    function renderBoxes(groupCount, perBox, remainder) {
+      const boxes = Array.from({ length: groupCount }, (_, index) => `
+        <div class="box">
+          <div class="box-name">กล่อง ${index + 1}</div>
+          <div class="box-items">${renderItems(perBox, true)}</div>
+        </div>
+      `).join("");
+      const leftover = remainder > 0 ? `<div class="leftover">เหลือ ${remainder} ชิ้น ที่ใส่กล่องไม่พอ</div>` : "";
+      return `<div class="box-grid">${boxes}</div>${leftover}`;
+    }
+
+    function renderStageOne(q) {
+      const perBox = state.stageOneAnswer;
+      visualArea.innerHTML = `
+        <div class="conveyor" aria-label="ของทั้งหมด ${q.total} ชิ้น">${renderItems(q.total, false)}</div>
+        ${renderBoxes(q.divisor, perBox, 0)}
+      `;
+      answerArea.innerHTML = `
+        <div class="counter">
+          <button class="icon-btn" type="button" id="minusBtn" aria-label="ลดคำตอบ">−</button>
+          <div class="count-display"><span id="stageOneValue">${state.stageOneAnswer}</span> ชิ้น</div>
+          <button class="icon-btn" type="button" id="plusBtn" aria-label="เพิ่มคำตอบ">+</button>
+        </div>
+        <button class="btn good" type="button" id="checkBtn">ตรวจคำตอบ</button>
+      `;
+      document.getElementById("minusBtn").addEventListener("click", () => guarded(() => changeStageOne(-1, q)));
+      document.getElementById("plusBtn").addEventListener("click", () => guarded(() => changeStageOne(1, q)));
+      document.getElementById("checkBtn").addEventListener("click", () => guarded(checkStageOne));
+      changeStageOne(0, q);
+    }
+
+    function changeStageOne(delta, q) {
+      state.stageOneAnswer = Math.max(1, Math.min(12, state.stageOneAnswer + delta));
+      document.getElementById("stageOneValue").textContent = state.stageOneAnswer;
+      visualArea.innerHTML = `
+        <div class="conveyor" aria-label="ของทั้งหมด ${q.total} ชิ้น">${renderItems(q.total, false)}</div>
+        ${renderBoxes(q.divisor, state.stageOneAnswer, 0)}
+      `;
+    }
+
+    function renderStageTwo(q) {
+      visualArea.innerHTML = `
+        <div class="conveyor" aria-label="ของทั้งหมด ${q.total} ชิ้น">${renderItems(Math.min(q.total, 36), false)}</div>
+        ${renderBoxes(q.divisor, q.quotient, q.remainder)}
+      `;
+      answerArea.innerHTML = `
+        <div class="field-grid">
+          <label>ผลหาร
+            <input id="quotientInput" type="number" inputmode="numeric" min="0" max="99" autocomplete="off">
+          </label>
+          <label>เศษ
+            <input id="remainderInput" type="number" inputmode="numeric" min="0" max="99" autocomplete="off">
+          </label>
+        </div>
+        <button class="btn good" type="button" id="checkBtn">ตรวจคำตอบ</button>
+      `;
+      document.getElementById("checkBtn").addEventListener("click", () => guarded(checkStageTwo));
+    }
+
+    function renderStageThree(q) {
+      const perGroup = q.answer;
+      visualArea.innerHTML = `
+        <div class="conveyor" aria-label="ของทั้งหมด ${q.total}">${renderItems(Math.min(q.total, 36), false)}</div>
+        ${renderBoxes(q.divisor, perGroup, 0)}
+      `;
+      answerArea.innerHTML = `
+        <div class="choices">
+          ${q.choices.map(choice => `<button class="btn secondary choice" type="button" data-choice="${choice}">${choice} ${q.unit}</button>`).join("")}
+        </div>
+        <button class="btn good" type="button" id="checkBtn">ตรวจคำตอบ</button>
+      `;
+      document.querySelectorAll(".choice").forEach(button => {
+        button.addEventListener("click", () => guarded(() => selectChoice(button)));
+      });
+      document.getElementById("checkBtn").addEventListener("click", () => guarded(checkStageThree));
+    }
+
+    function selectChoice(button) {
+      document.querySelectorAll(".choice").forEach(item => item.classList.add("secondary"));
+      document.querySelectorAll(".choice").forEach(item => item.classList.remove("warn"));
+      button.classList.remove("secondary");
+      button.classList.add("warn");
+      state.selectedChoice = Number(button.dataset.choice);
+    }
+
+    function checkStageOne() {
+      const q = questions[state.index];
+      const ok = state.stageOneAnswer === q.answer;
+      respond(ok, `เก่งมาก! ${q.total} ÷ ${q.divisor} = ${q.answer} กล่องละ ${q.answer} ชิ้นพอดี`, `ลองนับใหม่ทีละกล่องนะ ของทั้งหมด ${q.total} ชิ้น แบ่งออกเป็น ${q.divisor} กล่อง`);
+    }
+
+    function checkStageTwo() {
+      const q = questions[state.index];
+      const quotient = Number(document.getElementById("quotientInput").value);
+      const remainder = Number(document.getElementById("remainderInput").value);
+      const ok = quotient === q.quotient && remainder === q.remainder;
+      respond(ok, `เยี่ยมเลย! ${q.total} ÷ ${q.divisor} = ${q.quotient} เศษ ${q.remainder}`, `ลองคูณ ${q.divisor} × ผลหาร แล้วดูว่าขาดหรือเหลือกี่ชิ้น`);
+    }
+
+    function checkStageThree() {
+      const q = questions[state.index];
+      if (state.selectedChoice === null) {
+        feedback.className = "feedback hint";
+        feedback.textContent = "เลือกคำตอบก่อน แล้วค่อยกดตรวจคำตอบนะ";
+        return;
+      }
+      const ok = state.selectedChoice === q.answer;
+      respond(ok, `ถูกต้อง! ${q.total} ÷ ${q.divisor} = ${q.answer} ได้กลุ่มละ ${q.answer} ${q.unit}`, `ลองดูคำว่า “แบ่งออกเป็น ${q.divisor} กลุ่ม” แปลว่าเราหากลุ่มละเท่าไร`);
+    }
+
+    function respond(ok, goodText, hintText) {
+      if (state.answered) return;
+      state.tries += 1;
+      if (ok) {
+        state.answered = true;
+        state.score += 1;
+        feedback.className = "feedback correct";
+        feedback.textContent = goodText;
+        updateScore();
+        window.setTimeout(nextQuestion, 900);
+      } else {
+        feedback.className = "feedback hint";
+        feedback.textContent = hintText;
+      }
+    }
+
+    function nextQuestion() {
+      state.index += 1;
+      if (state.index >= questions.length) {
+        finishGame();
+      } else {
+        renderQuestion();
+      }
+    }
+
+    function finishGame() {
+      progressFill.style.width = "100%";
+      const effortStars = Math.max(1, Math.min(3, Math.ceil(state.score / 4)));
+      starLine.textContent = "★".repeat(effortStars);
+      effortText.textContent = `ได้ดาวความพยายาม ${effortStars} ดวง ตอบถูก ${state.score} จาก ${questions.length} ข้อ และลองทั้งหมด ${state.tries} ครั้ง`;
+      showScreen(endScreen);
+    }
+  </script>
+</body>
+</html>
