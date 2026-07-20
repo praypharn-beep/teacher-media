@@ -52,6 +52,20 @@ test("requires date in YYYY-MM-DD format", async () => {
   });
 });
 
+test("rejects a url that is not a valid URI", async () => {
+  await withLibrary([{ ...validItem, url: "games/J1784256147282.html" }], async (file) => {
+    const result = await validateLibraryFile(file);
+    assert.match(result.errors.join("\n"), /item 1: url must be a valid URL/);
+  });
+});
+
+test("rejects a field the schema does not declare", async () => {
+  await withLibrary([{ ...validItem, madeUpField: "ไม่มีใน schema" }], async (file) => {
+    const result = await validateLibraryFile(file);
+    assert.match(result.errors.join("\n"), /item 1: unknown field "madeUpField"/);
+  });
+});
+
 test("rejects duplicate jobId and url values across the file", async () => {
   await withLibrary(
     [

@@ -16,6 +16,15 @@ function formatLocation(index) {
   return `item ${index + 1}`;
 }
 
+function isValidUri(value) {
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function validateItem(item, index, schema) {
   const errors = [];
   const location = formatLocation(index);
@@ -46,8 +55,16 @@ function validateItem(item, index, schema) {
       errors.push(`${location}: ${field} must not be empty`);
     }
 
-    if (field === "date" && !new RegExp(fieldSchema.pattern).test(value)) {
-      errors.push(`${location}: date must use YYYY-MM-DD`);
+    if (fieldSchema.pattern && !new RegExp(fieldSchema.pattern).test(value)) {
+      errors.push(
+        field === "date"
+          ? `${location}: date must use YYYY-MM-DD`
+          : `${location}: ${field} must match ${fieldSchema.pattern}`,
+      );
+    }
+
+    if (fieldSchema.format === "uri" && !isValidUri(value)) {
+      errors.push(`${location}: ${field} must be a valid URL`);
     }
   }
 

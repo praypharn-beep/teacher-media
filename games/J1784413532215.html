@@ -414,9 +414,11 @@
       box-shadow: 0 6px 0 #15803d;
     }
 
+    /* ใช้ส้มเข้มแทน var(--orange) เพื่อให้ตัวอักษรขาวได้ contrast 5.2:1 (เกณฑ์ AA 4.5:1)
+       อ่านออกแม้ฉายโปรเจกเตอร์ในห้องเรียน และยังเห็นชัดว่าเป็นตัวเลือกที่เลือกอยู่ */
     .btn.warn {
-      background: var(--orange);
-      box-shadow: 0 6px 0 #c2410c;
+      background: #c2410c;
+      box-shadow: 0 6px 0 #7c2d12;
     }
 
     .icon-btn {
@@ -785,7 +787,10 @@
 
     function finishGame() {
       progressFill.style.width = "100%";
-      const effortStars = Math.max(1, Math.min(3, Math.ceil(state.score / 4)));
+      // จบเกมได้ก็ต่อเมื่อตอบถูกครบทุกข้อ state.score จึงเท่ากับจำนวนข้อเสมอ
+      // ตัววัดความพยายามจริงคือจำนวนครั้งที่ตอบผิด = ลองทั้งหมด - ตอบถูก
+      const mistakes = state.tries - state.score;
+      const effortStars = mistakes === 0 ? 3 : mistakes <= 4 ? 2 : 1;
       starLine.textContent = "★".repeat(effortStars);
       effortText.textContent = `ได้ดาวความพยายาม ${effortStars} ดวง ตอบถูก ${state.score} จาก ${questions.length} ข้อ และลองทั้งหมด ${state.tries} ครั้ง`;
       showScreen(endScreen);

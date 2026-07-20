@@ -167,6 +167,15 @@
       filter: saturate(1.15);
     }
 
+    /* ขอบเรืองสำหรับคนที่เล่นด้วยคีย์บอร์ด ต้องเห็นชัดว่าตอนนี้อยู่ที่คำไหน */
+    .word:focus-visible {
+      z-index: 9;
+      outline: 4px solid #17324d;
+      outline-offset: 4px;
+      border-color: var(--rose);
+      filter: saturate(1.2);
+    }
+
     .word.correct {
       animation: popAway .45s ease forwards;
     }
@@ -376,7 +385,7 @@
     </main>
 
     <footer>
-      <div id="message">จีบนิ้วเพื่อหยิบคำ แล้วลากไปป้อนมังกร</div>
+      <div id="message" role="status" aria-live="polite">จีบนิ้วเพื่อหยิบคำ แล้วลากไปป้อนมังกร</div>
       <div id="controls">
         <button id="speakBtn" class="secondary" type="button">ฟังโจทย์</button>
         <button id="restartBtn" class="secondary" type="button">เริ่มใหม่</button>
@@ -480,6 +489,8 @@
     let hands = null;
     let touchFallback = false;
     let running = false;
+    let rafId = 0;
+    let keyboardMode = false;
     let lastPointer = null;
 
     function shuffle(list) {
@@ -516,7 +527,11 @@
       running = true;
       finishOverlay.classList.add('hidden');
       loadStage();
-      requestAnimationFrame(loop);
+      // ยกเลิกเฟรมเก่าที่ยังค้างอยู่ก่อนเสมอ ไม่งั้นการกดเริ่มใหม่ระหว่างเล่น
+      // จะได้ loop ซ้อนกันสองชุด ทำให้คำร่วงเร็วเป็นทวีคูณ
+      cancelAnimationFrame(rafId);
+      lastTime = 0;
+      rafId = requestAnimationFrame(loop);
     }
 
     function loadStage() {
@@ -538,7 +553,8 @@
         el.className = 'word';
         el.textContent = item.text;
         el.setAttribute('role', 'button');
-        el.setAttribute('aria-label', `คำว่า ${item.text}`);
+        el.setAttribute('aria-label', `คำว่า ${item.text} กด Enter เพื่อป้อนมังกร`);
+        el.tabIndex = 0;
         stageEl.appendChild(el);
 
         const col = index % cols;
@@ -557,12 +573,18 @@
         };
         placeWord(word);
         attachTouchDrag(word);
+        attachKeyboardFeed(word);
         return word;
       });
 
       updateLabels();
       speakPrompt();
-      messageEl.textContent = 'จีบนิ้วเพื่อหยิบคำที่ใช่ แล้วลากไปป้อนมังกร';
+      messageEl.textContent = 'จีบนิ้วเพื่อหยิบคำที่ใช่ แล้วลากไปป้อนมังกร (หรือกด Tab เลือกคำ แล้ว Enter ป้อน)';
+      // ถ้ากำลังเล่นด้วยคีย์บอร์ดอยู่ ด่านใหม่ต้องมีที่ให้โฟกัสต่อ ไม่งั้นโฟกัสหลุดไป body
+      if (keyboardMode) {
+        const first = words[0];
+        if (first) first.el.focus();
+      }
     }
 
     function updateLabels() {
@@ -597,7 +619,7 @@
         }
         placeWord(word);
       }
-      requestAnimationFrame(loop);
+      rafId = requestAnimationFrame(loop);
     }
 
     async function startCameraMode() {
@@ -742,6 +764,31 @@
       return bestDistance <= PICK_RADIUS ? best : null;
     }
 
+    // เล่นด้วยคีย์บอร์ด: Tab ไล่เลือกคำ แล้ว Enter/Space ป้อนมังกร
+    // ไม่ได้จำลองการลาก เพราะสิ่งที่ผู้เล่นตั้งใจจริง ๆ คือ "เลือกคำนี้" ไม่ใช่ "ลากไปตรงนั้น"
+    function attachKeyboardFeed(word) {
+      word.el.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') return;
+        event.preventDefault();
+        if (!running || word.caught) return;
+        keyboardMode = true;
+        if (grabbed) {
+          grabbed.el.classList.remove('grabbed');
+          grabbed = null;
+        }
+        judgeWord(word);
+        if (word.correct) {
+          word.el.tabIndex = -1;
+          focusNextWord(word);
+        }
+      });
+    }
+
+    function focusNextWord(current) {
+      const next = words.find(item => item !== current && !item.caught && item.el.isConnected);
+      if (next) next.el.focus();
+    }
+
     function releaseGrab() {
       if (!grabbed) return;
       grabbed.el.classList.remove('grabbed');
@@ -807,6 +854,7 @@
 
     function finishGame() {
       running = false;
+      cancelAnimationFrame(rafId);
       finalScore.textContent = `คะแนนรวม ${score} จาก ${mattraStages.reduce((sum, stage) => sum + Math.min(stage.words.length, 4), 0)}`;
       finishOverlay.classList.remove('hidden');
       say('เก่งมาก หนูช่วยมังกรครบทุกมาตราแล้ว');
@@ -912,6 +960,7 @@
 
     function resetAll() {
       running = false;
+      cancelAnimationFrame(rafId);
       words.forEach(word => word.el.remove());
       words = [];
       grabbed = null;
