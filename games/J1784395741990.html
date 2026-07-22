@@ -26,6 +26,11 @@
       color: var(--ink);
       background:
         linear-gradient(180deg, var(--sky) 0 42%, #e8f7d7 42% 100%);
+      /* กันเด็กแตะสองครั้งแล้วจอซูม และกันการลากเลือกข้อความระหว่างเล่นบนแท็บเล็ต */
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     button {
@@ -430,7 +435,9 @@
 
     .btn.green { background: var(--green); box-shadow: 0 5px 0 #1d6948; }
     .btn.red { background: var(--red); box-shadow: 0 5px 0 #8e2c27; }
-    .btn.yellow { background: #d99a15; box-shadow: 0 5px 0 #875d09; }
+    /* พื้นสีทองสว่างเกินกว่าจะใช้ตัวอักษรขาว (2.4:1) จึงใช้ตัวอักษรสีเข้มแทน
+       ได้ contrast 5.7:1 โดยคงสีปุ่มเดิมไว้ */
+    .btn.yellow { background: #d99a15; color: #3a2a00; box-shadow: 0 5px 0 #875d09; }
     .btn.dark { background: #455a64; box-shadow: 0 5px 0 #263238; }
 
     .btn[disabled] {
