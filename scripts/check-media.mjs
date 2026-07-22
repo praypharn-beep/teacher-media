@@ -42,6 +42,15 @@ async function main() {
     }
   }
 
+  // 3. jobId ซ้ำ เกิดง่ายเมื่อสองคนเพิ่มเกมเดียวกันพร้อมกัน (เคยเกิดจริง)
+  const seen = new Set();
+  for (const id of listedIds) {
+    if (seen.has(id)) {
+      problem(`library.json มี ${id} ซ้ำมากกว่าหนึ่งรายการ — เกมจะโผล่สองครั้งบนหน้าเว็บ`);
+    }
+    seen.add(id);
+  }
+
   // 3. url ต้องตรงกับ jobId ของตัวเอง คัดลอกรายการเดิมมาแก้แล้วลืมเปลี่ยน url เป็นเรื่องปกติ
   for (const item of library) {
     const expected = `${SITE_BASE}${item.jobId}.html`;
