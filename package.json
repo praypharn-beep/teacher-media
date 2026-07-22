@@ -1,0 +1,14 @@
+{
+  "name": "teacher-media",
+  "version": "1.0.0",
+  "private": true,
+  "description": "คลังสื่อการเรียนแบบเล่นได้ สำหรับครูโรงเรียนบ้านวังน้ำมอก",
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-media.mjs && node scripts/validate-library.mjs",
+    "test": "npm run check && node --test"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}
